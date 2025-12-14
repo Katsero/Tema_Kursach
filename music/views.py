@@ -106,7 +106,7 @@ def home_page(request):
             Q(album__title__icontains=search_query)
         ).distinct()
     if genre_filter:
-        tracks = tracks.filter(genre__icontains=genre_filter)
+        tracks = tracks.filter(genre=genre_filter)
     if artist_filter:
         tracks = tracks.filter(artists__name__icontains=artist_filter)
 
@@ -117,7 +117,7 @@ def home_page(request):
     page_obj = paginator.get_page(page_number)
 
     # Для фильтров в меню
-    all_genres = Track.objects.values_list('genre', flat=True).distinct().exclude(genre='')
+    all_genres = Track.GENRE_CHOICES
     all_artists = Artist.objects.all()
 
     context = {

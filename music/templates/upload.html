@@ -60,6 +60,11 @@
         color: #007bff;
         text-decoration: none;
       }
+      .help-text {
+        font-size: 0.9em;
+        color: #666;
+        margin-top: 5px;
+      }
     </style>
   </head>
   <body>
@@ -79,22 +84,36 @@
         <div class="form-group">
           <label for="{{ form.uploaded_by.id_for_label }}">Ваш ник:</label>
           {{ form.uploaded_by }}
+          <span class="help-text">По умолчанию: «Аноним»</span>
         </div>
         <div class="form-group">
           <label for="{{ form.title.id_for_label }}">Название трека:</label>
           {{ form.title }}
+          <span class="help-text">По умолчанию: «Unnamed»</span>
         </div>
         <div class="form-group">
           <label for="{{ form.audio_file.id_for_label }}"
             >Аудиофайл (только .mp3/.wav, до 20 МБ):</label
           >
-          {{ form.audio_file }}
+          {{ form.audio_file }} {% if form.audio_file.errors %}
+          <div style="color: red">{{ form.audio_file.errors }}</div>
+          {% endif %}
         </div>
         <div class="form-group">
-          <label for="{{ form.album.id_for_label }}"
-            >Альбом (опционально):</label
+          <label for="{{ form.artist_name.id_for_label }}">Исполнитель:</label>
+          {{ form.artist_name }}
+          <span class="help-text"
+            >Если исполнителя нет — он будет создан автоматически.</span
           >
-          {{ form.album }}
+        </div>
+        <div class="form-group">
+          <label for="{{ form.album_title.id_for_label }}"
+            >Альбом (необязательно):</label
+          >
+          {{ form.album_title }}
+          <span class="help-text"
+            >Если альбома нет — он будет создан автоматически.</span
+          >
         </div>
         <div class="form-group">
           <label for="{{ form.genre.id_for_label }}">Жанр:</label>

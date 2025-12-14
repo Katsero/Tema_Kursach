@@ -83,8 +83,8 @@
             <input type="text" name="search" value="{{ search_query }}" placeholder="Поиск по названию, жанру, исполнителю...">
             <select name="genre">
                 <option value="">Любой жанр</option>
-                {% for genre in all_genres %}
-                    <option value="{{ genre }}" {% if genre == genre_filter %}selected{% endif %}>{{ genre }}</option>
+                {% for code, name in all_genres %}
+                    <option value="{{ code }}" {% if code == genre_filter %}selected{% endif %}>{{ name }}</option>
                 {% endfor %}
             </select>
             <select name="artist">
@@ -105,7 +105,7 @@
                     <div class="track-meta">
                         <p><strong>Загрузил:</strong> {{ track.uploaded_by }}</p>
                         <p><strong>Альбом:</strong> {% if track.album %}{{ track.album.title }}{% else %}Не указан{% endif %}</p>
-                        <p><strong>Жанр:</strong> {{ track.genre|default:"Без жанра" }}</p>
+                        <p><strong>Жанр:</strong> {{ track.get_genre_display }}</p>
                         <p><strong>Исполнители:</strong>
                             {% for artist in track.artists.all %}
                                 {{ artist.name }}{% if not forloop.last %}, {% endif %}

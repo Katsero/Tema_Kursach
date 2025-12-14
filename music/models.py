@@ -2,7 +2,7 @@
 from django.db import models
 
 class Artist(models.Model):
-    name = models.CharField(max_length=100, verbose_name="Имя исполнителя")
+    name = models.CharField(max_length=100, verbose_name="Имя исполнителя", unique=True)
 
     def __str__(self):
         return self.name
@@ -13,7 +13,7 @@ class Artist(models.Model):
 
 
 class Album(models.Model):
-    title = models.CharField(max_length=200, verbose_name="Название альбома")
+    title = models.CharField(max_length=200, verbose_name="Название альбома", unique=True)
     year = models.PositiveIntegerField(verbose_name="Год выпуска", null=True, blank=True)
     artists = models.ManyToManyField(Artist, related_name="albums", verbose_name="Исполнители")
 
@@ -26,13 +26,37 @@ class Album(models.Model):
 
 
 class Track(models.Model):
-    title = models.CharField(max_length=200, verbose_name="Название трека")
+    # Статичные жанры
+    GENRE_CHOICES = [
+        ('rock', 'Рок'),
+        ('pop', 'Поп'),
+        ('hip-hop', 'Хип-хоп'),
+        ('electronic', 'Электроника'),
+        ('jazz', 'Джаз'),
+        ('classical', 'Классическая'),
+        ('metal', 'Метал'),
+        ('blues', 'Блюз'),
+        ('country', 'Кантри'),
+        ('reggae', 'Регги'),
+        ('rnb', 'R&B'),
+        ('indie', 'Инди'),
+        ('folk', 'Фолк'),
+        ('punk', 'Панк'),
+        ('disco', 'Диско'),
+        ('soul', 'Соул'),
+        ('trance', 'Транс'),
+        ('house', 'Хаус'),
+        ('techno', 'Техно'),
+        ('dubstep', 'Дабстеп'),
+    ]
+
+    title = models.CharField(max_length=200, verbose_name="Название трека", default="Unnamed")
     audio_file = models.FileField(upload_to='tracks/', verbose_name="Аудиофайл")
-    uploaded_by = models.CharField(max_length=100, verbose_name="Ник загрузившего")
+    uploaded_by = models.CharField(max_length=100, verbose_name="Ник загрузившего", default="Аноним")
     uploaded_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата загрузки")
     album = models.ForeignKey(Album, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Альбом")
     artists = models.ManyToManyField(Artist, related_name="tracks", verbose_name="Исполнители")
-    genre = models.CharField(max_length=50, blank=True, verbose_name="Жанр")
+    genre = models.CharField(max_length=50, choices=GENRE_CHOICES, verbose_name="Жанр")
 
     def __str__(self):
         return self.title
@@ -44,7 +68,7 @@ class Track(models.Model):
 
 class Comment(models.Model):
     track = models.ForeignKey(Track, on_delete=models.CASCADE, related_name="comments", verbose_name="Трек")
-    author_name = models.CharField(max_length=100, verbose_name="Имя автора комментария")
+    author_name = models.CharField(max_length=100, verbose_name="Имя автора комментария", default="Аноним")
     text = models.TextField(verbose_name="Текст комментария")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата публикации")
 
