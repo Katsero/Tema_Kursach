@@ -7,13 +7,13 @@ class TrackUploadForm(forms.ModelForm):
         max_length=100,
         required=False,
         label="Исполнитель (введите имя или выберите из списка)",
-        widget=forms.TextInput(attrs={'placeholder': 'Например: Кипелов'})
+        widget=forms.TextInput(attrs={'placeholder': 'Например: Кипелов', 'id': 'artist-input'})
     )
     album_title = forms.CharField(
         max_length=200,
         required=False,
         label="Альбом (необязательно)",
-        widget=forms.TextInput(attrs={'placeholder': 'Название альбома'})
+        widget=forms.TextInput(attrs={'placeholder': 'Название альбома', 'id': 'album-input'})
     )
 
     class Meta:
@@ -28,25 +28,21 @@ class TrackUploadForm(forms.ModelForm):
     def clean_audio_file(self):
         file = self.cleaned_data.get('audio_file')
         if file:
-            # Проверка расширения
             ext = file.name.split('.')[-1].lower()
             if ext not in ['mp3', 'wav']:
                 raise forms.ValidationError("Поддерживаются только .mp3 и .wav файлы.")
-            # Проверка размера (до 20 МБ)
-            if file.size > 20 * 1024 * 1024:  # 20 MB
+            if file.size > 20 * 1024 * 1024:
                 raise forms.ValidationError("Файл должен быть не больше 20 МБ.")
         return file
 
     def save(self, commit=True):
         track = super().save(commit=False)
 
-        # Автоматическое создание исполнителя
         artist_name = self.cleaned_data.get('artist_name')
         if artist_name:
             artist, created = Artist.objects.get_or_create(name=artist_name.strip())
             track.artists.add(artist)
 
-        # Автоматическое создание альбома
         album_title = self.cleaned_data.get('album_title')
         if album_title:
             album, created = Album.objects.get_or_create(title=album_title.strip())
@@ -54,6 +50,6 @@ class TrackUploadForm(forms.ModelForm):
 
         if commit:
             track.save()
-            self.save_m2m()  # Сохраняем M2M связи (исполнители)
+            self.save_m2m()
 
         return track

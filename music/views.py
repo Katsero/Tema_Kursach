@@ -3,15 +3,13 @@ from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.db.models import Q
 from django.core.paginator import Paginator
+from django.http import JsonResponse
 from rest_framework import generics, filters
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
 from .models import Artist, Album, Track, Comment
 from .serializers import ArtistSerializer, AlbumSerializer, TrackSerializer, CommentSerializer
 from .forms import TrackUploadForm
 
-# Стандартный пагинатор
 class StandardResultsSetPagination(PageNumberPagination):
     page_size = 10
     page_size_query_param = 'page_size'
@@ -88,10 +86,29 @@ class CommentDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
 
+# === Autocomplete API ===
+
+def autocomplete_artists(request):
+    query = request.GET.get('q', '').strip()
+    if query:
+        artists = Artist.objects.filter(name__icontains=query).order_by('name')[:10]
+        data = [{'id': a.id, 'name': a.name} for a in artists]
+    else:
+        data = []
+    return JsonResponse(data, safe=False)
+
+def autocomplete_albums(request):
+    query = request.GET.get('q', '').strip()
+    if query:
+        albums = Album.objects.filter(title__icontains=query).order_by('title')[:10]
+        data = [{'id': a.id, 'title': a.title} for a in albums]
+    else:
+        data = []
+    return JsonResponse(data, safe=False)
+
 # === HTML Views ===
 
 def home_page(request):
-    """Главная страница с пагинацией и поиском."""
     search_query = request.GET.get('search', '')
     genre_filter = request.GET.get('genre', '')
     artist_filter = request.GET.get('artist', '')
@@ -116,7 +133,6 @@ def home_page(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    # Для фильтров в меню
     all_genres = Track.GENRE_CHOICES
     all_artists = Artist.objects.all()
 
@@ -130,9 +146,7 @@ def home_page(request):
     }
     return render(request, 'home.html', context)
 
-
 def upload_page(request):
-    """Страница загрузки трека."""
     if request.method == 'POST':
         form = TrackUploadForm(request.POST, request.FILES)
         if form.is_valid():

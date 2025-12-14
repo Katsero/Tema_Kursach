@@ -26,7 +26,6 @@ class Album(models.Model):
 
 
 class Track(models.Model):
-    # Статичные жанры
     GENRE_CHOICES = [
         ('rock', 'Рок'),
         ('pop', 'Поп'),
