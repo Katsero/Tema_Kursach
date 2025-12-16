@@ -105,7 +105,13 @@
                     <div class="track-meta">
                         <p><strong>Загрузил:</strong> {{ track.uploaded_by }}</p>
                         <p><strong>Альбом:</strong> {% if track.album %}{{ track.album.title }}{% else %}Не указан{% endif %}</p>
-                        <p><strong>Жанр:</strong> {{ track.get_genre_display }}</p>
+                        <p><strong>Жанры:</strong>
+                            {% for genre in track.genres.all %}
+                                {{ genre.name }}{% if not forloop.last %}, {% endif %}
+                            {% empty %}
+                                Не указаны
+                            {% endfor %}
+                        </p>
                         <p><strong>Исполнители:</strong>
                             {% for artist in track.artists.all %}
                                 {{ artist.name }}{% if not forloop.last %}, {% endif %}

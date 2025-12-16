@@ -1,6 +1,18 @@
 # music/models.py
 from django.db import models
 
+class Genre(models.Model):
+    name = models.CharField(max_length=50, unique=True, verbose_name="Название жанра")
+    code = models.CharField(max_length=30, unique=True, verbose_name="Код жанра")
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = "Жанр"
+        verbose_name_plural = "Жанры"
+
+
 class Artist(models.Model):
     name = models.CharField(max_length=100, verbose_name="Имя исполнителя", unique=True)
 
@@ -26,36 +38,13 @@ class Album(models.Model):
 
 
 class Track(models.Model):
-    GENRE_CHOICES = [
-        ('rock', 'Рок'),
-        ('pop', 'Поп'),
-        ('hip-hop', 'Хип-хоп'),
-        ('electronic', 'Электроника'),
-        ('jazz', 'Джаз'),
-        ('classical', 'Классическая'),
-        ('metal', 'Метал'),
-        ('blues', 'Блюз'),
-        ('country', 'Кантри'),
-        ('reggae', 'Регги'),
-        ('rnb', 'R&B'),
-        ('indie', 'Инди'),
-        ('folk', 'Фолк'),
-        ('punk', 'Панк'),
-        ('disco', 'Диско'),
-        ('soul', 'Соул'),
-        ('trance', 'Транс'),
-        ('house', 'Хаус'),
-        ('techno', 'Техно'),
-        ('dubstep', 'Дабстеп'),
-    ]
-
     title = models.CharField(max_length=200, verbose_name="Название трека", default="Unnamed")
     audio_file = models.FileField(upload_to='tracks/', verbose_name="Аудиофайл")
     uploaded_by = models.CharField(max_length=100, verbose_name="Ник загрузившего", default="Аноним")
     uploaded_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата загрузки")
     album = models.ForeignKey(Album, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Альбом")
     artists = models.ManyToManyField(Artist, related_name="tracks", verbose_name="Исполнители")
-    genre = models.CharField(max_length=50, choices=GENRE_CHOICES, verbose_name="Жанр")
+    genres = models.ManyToManyField(Genre, related_name="tracks", blank=True, verbose_name="Жанры")
 
     def __str__(self):
         return self.title

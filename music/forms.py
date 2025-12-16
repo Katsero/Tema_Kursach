@@ -1,28 +1,46 @@
 # music/forms.py
 from django import forms
-from .models import Track, Artist, Album
+from django.core.exceptions import ValidationError
+from .models import Track, Artist, Album, Genre
+
+class GenreMultiWidget(forms.SelectMultiple):
+    def __init__(self, attrs=None):
+        super().__init__(attrs)
+        self.attrs = {'class': 'genre-select hidden'}
+
+class GenreMultiField(forms.ModelMultipleChoiceField):
+    def validate(self, value):
+        super().validate(value)
+        if len(value) != len(set(value)):
+            raise ValidationError("Нельзя выбрать один жанр дважды.")
 
 class TrackUploadForm(forms.ModelForm):
     artist_name = forms.CharField(
         max_length=100,
         required=False,
-        label="Исполнитель (введите имя или выберите из списка)",
+        label="Исполнитель",
         widget=forms.TextInput(attrs={'placeholder': 'Например: Кипелов', 'id': 'artist-input'})
     )
     album_title = forms.CharField(
         max_length=200,
         required=False,
-        label="Альбом (необязательно)",
+        label="Альбом",
         widget=forms.TextInput(attrs={'placeholder': 'Название альбома', 'id': 'album-input'})
+    )
+    # Поле жанров — скрытое, управляем через JS
+    genres = GenreMultiField(
+        queryset=Genre.objects.all(),
+        widget=GenreMultiWidget(),
+        required=False,
+        label="Жанры"
     )
 
     class Meta:
         model = Track
-        fields = ['title', 'audio_file', 'uploaded_by', 'album_title', 'artist_name', 'genre']
+        fields = ['title', 'audio_file', 'uploaded_by', 'album_title', 'artist_name', 'genres']
         widgets = {
             'uploaded_by': forms.TextInput(attrs={'placeholder': 'Ваш ник (по умолчанию: Аноним)'}),
             'title': forms.TextInput(attrs={'placeholder': 'Название трека (по умолчанию: Unnamed)'}),
-            'genre': forms.Select(choices=Track.GENRE_CHOICES),
         }
 
     def clean_audio_file(self):
@@ -40,12 +58,12 @@ class TrackUploadForm(forms.ModelForm):
 
         artist_name = self.cleaned_data.get('artist_name')
         if artist_name:
-            artist, created = Artist.objects.get_or_create(name=artist_name.strip())
+            artist, _ = Artist.objects.get_or_create(name=artist_name.strip())
             track.artists.add(artist)
 
         album_title = self.cleaned_data.get('album_title')
         if album_title:
-            album, created = Album.objects.get_or_create(title=album_title.strip())
+            album, _ = Album.objects.get_or_create(title=album_title.strip())
             track.album = album
 
         if commit:

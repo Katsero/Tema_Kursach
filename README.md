@@ -26,7 +26,8 @@ mysecretpassword
 <!-- ЗАПУСК СЕРВЕРА -->
 <!-- http://127.0.0.1:8000/ -->
 
-8. python manage.py runserver
+python manage.py migrate
+python manage.py runserver
 
 <!-- БАЗА ДАННЫХ -->
 <!-- http://localhost:8000/admin -->

@@ -29,19 +29,45 @@
         font-weight: bold;
       }
       input,
-      select,
-      textarea {
+      select {
         width: 100%;
         padding: 8px;
         border: 1px solid #ccc;
         border-radius: 4px;
         box-sizing: border-box;
       }
+      .genre-field {
+        display: flex;
+        gap: 5px;
+        margin-top: 5px;
+      }
+      .genre-field select {
+        flex: 1;
+      }
+      .remove-genre {
+        background: #dc3545;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        padding: 0 8px;
+        cursor: pointer;
+      }
+      .add-genre-btn {
+        margin-top: 10px;
+        background: #28a745;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      .hidden {
+        display: none;
+      }
       .suggestions {
         position: absolute;
         background: white;
         border: 1px solid #ccc;
-        border-top: none;
         z-index: 100;
         width: 100%;
         max-height: 150px;
@@ -55,15 +81,16 @@
       .suggestions div:hover {
         background: #f0f0f0;
       }
-      button {
+      button[type="submit"] {
         background: #007bff;
         color: white;
         padding: 10px 20px;
         border: none;
         border-radius: 4px;
         cursor: pointer;
+        margin-top: 10px;
       }
-      button:hover {
+      button[type="submit"]:hover {
         background: #0056b3;
       }
       .messages {
@@ -79,11 +106,6 @@
         color: #007bff;
         text-decoration: none;
       }
-      .help-text {
-        font-size: 0.9em;
-        color: #666;
-        margin-top: 5px;
-      }
     </style>
   </head>
   <body>
@@ -98,28 +120,37 @@
       </ul>
       {% endif %}
 
-      <form method="post" enctype="multipart/form-data">
+      <form
+        method="post"
+        enctype="multipart/form-data"
+        id="upload-form"
+        data-genres='[ {% for genre in genres %}{"code": "{{ genre.code }}", "name": "{{ genre.name }}"}{% if not forloop.last %}, {% endif %}{% endfor %} ]'
+      >
         {% csrf_token %}
         <div class="form-group">
-          <label for="{{ form.uploaded_by.id_for_label }}">Ваш ник:</label>
-          {{ form.uploaded_by }}
-          <span class="help-text">По умолчанию: «Аноним»</span>
+          <label>Ваш ник:</label>
+          <input
+            type="text"
+            name="uploaded_by"
+            placeholder="Аноним (по умолчанию)"
+            value="{{ form.uploaded_by.value|default:'' }}"
+          />
         </div>
         <div class="form-group">
-          <label for="{{ form.title.id_for_label }}">Название трека:</label>
-          {{ form.title }}
-          <span class="help-text">По умолчанию: «Unnamed»</span>
+          <label>Название трека:</label>
+          <input
+            type="text"
+            name="title"
+            placeholder="Unnamed (по умолчанию)"
+            value="{{ form.title.value|default:'' }}"
+          />
         </div>
         <div class="form-group">
-          <label for="{{ form.audio_file.id_for_label }}"
-            >Аудиофайл (только .mp3/.wav, до 20 МБ):</label
-          >
-          {{ form.audio_file }} {% if form.audio_file.errors %}
-          <div style="color: red">{{ form.audio_file.errors }}</div>
-          {% endif %}
+          <label>Аудиофайл (.mp3/.wav, до 20 МБ):</label>
+          {{ form.audio_file }}
         </div>
         <div class="form-group">
-          <label for="artist-input">Исполнитель:</label>
+          <label>Исполнитель:</label>
           <input
             type="text"
             id="artist-input"
@@ -127,10 +158,9 @@
             placeholder="Например: Кипелов"
           />
           <div id="artist-suggestions" class="suggestions"></div>
-          <span class="help-text">Начните вводить — появятся подсказки.</span>
         </div>
         <div class="form-group">
-          <label for="album-input">Альбом (необязательно):</label>
+          <label>Альбом (необязательно):</label>
           <input
             type="text"
             id="album-input"
@@ -138,14 +168,22 @@
             placeholder="Название альбома"
           />
           <div id="album-suggestions" class="suggestions"></div>
-          <span class="help-text"
-            >Если введённый альбом существует — он подставится.</span
-          >
         </div>
+
+        <!-- Жанры -->
         <div class="form-group">
-          <label for="{{ form.genre.id_for_label }}">Жанр:</label>
-          {{ form.genre }}
+          <label>Жанры:</label>
+          <div id="genres-container">
+            <!-- Изначально пусто -->
+          </div>
+          <button type="button" id="add-genre" class="add-genre-btn">
+            ➕ Добавить жанр
+          </button>
         </div>
+
+        <!-- Скрытое поле для отправки жанров -->
+        {{ form.genres }}
+
         <button type="submit">Загрузить трек</button>
       </form>
       <br />
@@ -153,25 +191,137 @@
     </div>
 
     <script>
+      // Получаем данные о жанрах из data-атрибута формы
+      const allGenres = JSON.parse(
+        document.getElementById("upload-form").dataset.genres
+      );
+      let selectedGenresArray = []; // Массив для хранения кодов выбранных жанров в порядке добавления
+
+      /**
+       * Основная функция для рендеринга всех полей жанров
+       * Она должна быть единственным источником истины для DOM
+       */
+      function renderGenres() {
+        const container = document.getElementById("genres-container");
+        container.innerHTML = ""; // Очищаем контейнер
+
+        // Создаём элементы для каждого выбранного жанра (в порядке массива)
+        selectedGenresArray.forEach((code, index) => {
+          const genre = allGenres.find((g) => g.code === code);
+          if (!genre) return;
+
+          const div = document.createElement("div");
+          div.className = "genre-field";
+
+          // Создаём select для этого жанра
+          const select = document.createElement("select");
+          select.dataset.index = index; // Запоминаем индекс этого жанра в массиве
+
+          // Заполняем select всеми доступными жанрами (кроме уже выбранных)
+          allGenres.forEach((g) => {
+            if (selectedGenresArray.includes(g.code) && g.code !== code) {
+              // Если жанр уже выбран и это не текущий, пропускаем
+              return;
+            }
+            const opt = document.createElement("option");
+            opt.value = g.code;
+            opt.textContent = g.name;
+            if (g.code === code) {
+              opt.selected = true; // Выбираем текущий жанр
+            }
+            select.appendChild(opt);
+          });
+
+          // Обработчик изменения значения select
+          select.addEventListener("change", () => {
+            const oldIndex = parseInt(select.dataset.index); // Индекс жанра в массиве
+            const oldCode = selectedGenresArray[oldIndex]; // Старый код жанра
+            const newCode = select.value; // Новый код жанра
+
+            // Проверяем, не выбрали ли мы уже существующий жанр (чтобы избежать дубликатов)
+            if (selectedGenresArray.includes(newCode)) {
+              // Если новый жанр уже есть, просто удаляем старый
+              selectedGenresArray.splice(oldIndex, 1);
+              // Перерисовываем, чтобы удалить дубликат
+              renderGenres();
+              return;
+            }
+
+            // Обновляем код жанра в массиве по индексу
+            selectedGenresArray[oldIndex] = newCode;
+
+            // Перерисовываем всё, чтобы отразить изменения
+            renderGenres();
+          });
+
+          // Кнопка удаления
+          const removeBtn = document.createElement("button");
+          removeBtn.type = "button";
+          removeBtn.className = "remove-genre";
+          removeBtn.textContent = "✕";
+          removeBtn.addEventListener("click", () => {
+            // Удаляем жанр из массива по индексу
+            selectedGenresArray.splice(index, 1);
+            // Перерисовываем
+            renderGenres();
+          });
+
+          // Добавляем select и кнопку в div
+          div.appendChild(select);
+          div.appendChild(removeBtn);
+
+          // Добавляем div в контейнер
+          container.appendChild(div);
+        });
+
+        // Обновляем скрытое поле формы (важно для отправки данных)
+        const hiddenSelect = document.querySelector('select[name="genres"]');
+        hiddenSelect.innerHTML = "";
+        selectedGenresArray.forEach((code) => {
+          const opt = document.createElement("option");
+          opt.value = code;
+          opt.selected = true;
+          hiddenSelect.appendChild(opt);
+        });
+      }
+
+      // Функция для добавления нового жанра
+      document.getElementById("add-genre").addEventListener("click", () => {
+        if (selectedGenresArray.length >= allGenres.length) {
+          alert("Нельзя выбрать больше жанров!");
+          return;
+        }
+
+        // Находим первый доступный жанр (не выбранный)
+        const availableGenre = allGenres.find(
+          (g) => !selectedGenresArray.includes(g.code)
+        );
+        if (!availableGenre) {
+          alert("Все жанры уже выбраны.");
+          return;
+        }
+
+        // Добавляем его в конец массива
+        selectedGenresArray.push(availableGenre.code);
+
+        // Перерисовываем интерфейс
+        renderGenres();
+      });
+
+      // Автокомплит (оставляем без изменений)
       function setupAutocomplete(inputId, apiUrl, suggestionsId) {
         const input = document.getElementById(inputId);
         const suggestions = document.getElementById(suggestionsId);
-
         input.addEventListener("input", () => {
           const query = input.value.trim();
           if (query.length < 1) {
             suggestions.style.display = "none";
             return;
           }
-
           fetch(`${apiUrl}?q=${encodeURIComponent(query)}`)
-            .then((response) => response.json())
+            .then((r) => r.json())
             .then((data) => {
               suggestions.innerHTML = "";
-              if (data.length === 0) {
-                suggestions.style.display = "none";
-                return;
-              }
               data.forEach((item) => {
                 const div = document.createElement("div");
                 div.textContent = item.name || item.title;
@@ -182,13 +332,8 @@
                 suggestions.appendChild(div);
               });
               suggestions.style.display = "block";
-            })
-            .catch(() => {
-              suggestions.style.display = "none";
             });
         });
-
-        // Закрыть подсказки при клике вне поля
         document.addEventListener("click", (e) => {
           if (!input.contains(e.target) && !suggestions.contains(e.target)) {
             suggestions.style.display = "none";
@@ -196,7 +341,7 @@
         });
       }
 
-      // Инициализация
+      // Инициализация автокомплита
       document.addEventListener("DOMContentLoaded", () => {
         setupAutocomplete(
           "artist-input",
@@ -208,6 +353,23 @@
           "/api/albums/search/",
           "album-suggestions"
         );
+
+        // Инициализация рендеринга (если нужно восстановить состояние из формы)
+        const hiddenSelect = document.querySelector('select[name="genres"]');
+        if (hiddenSelect && hiddenSelect.options.length > 0) {
+          for (let i = 0; i < hiddenSelect.options.length; i++) {
+            const option = hiddenSelect.options[i];
+            if (option.selected) {
+              // Добавляем в массив только если его ещё нет (избегаем дубликатов)
+              if (!selectedGenresArray.includes(option.value)) {
+                selectedGenresArray.push(option.value);
+              }
+            }
+          }
+        }
+
+        // Рендерим начальное состояние
+        renderGenres();
       });
     </script>
   </body>

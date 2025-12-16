@@ -6,7 +6,7 @@ from django.core.paginator import Paginator
 from django.http import JsonResponse
 from rest_framework import generics, filters
 from rest_framework.pagination import PageNumberPagination
-from .models import Artist, Album, Track, Comment
+from .models import Artist, Album, Track, Comment, Genre
 from .serializers import ArtistSerializer, AlbumSerializer, TrackSerializer, CommentSerializer
 from .forms import TrackUploadForm
 
@@ -39,10 +39,10 @@ class TrackList(generics.ListCreateAPIView):
     serializer_class = TrackSerializer
     pagination_class = StandardResultsSetPagination
     filter_backends = [filters.SearchFilter]
-    search_fields = ['title', 'genre', 'artists__name', 'album__title']
+    search_fields = ['title', 'genres__name', 'artists__name', 'album__title']
 
     def get_queryset(self):
-        queryset = Track.objects.all().select_related('album').prefetch_related('artists')
+        queryset = Track.objects.all().select_related('album').prefetch_related('artists', 'genres')
         title = self.request.query_params.get('title')
         genre = self.request.query_params.get('genre')
         artist = self.request.query_params.get('artist')
@@ -52,7 +52,7 @@ class TrackList(generics.ListCreateAPIView):
         if search:
             queryset = queryset.filter(
                 Q(title__icontains=search) |
-                Q(genre__icontains=search) |
+                Q(genres__name__icontains=search) |
                 Q(artists__name__icontains=search) |
                 Q(album__title__icontains=search)
             ).distinct()
@@ -60,7 +60,7 @@ class TrackList(generics.ListCreateAPIView):
             if title:
                 queryset = queryset.filter(title__icontains=title)
             if genre:
-                queryset = queryset.filter(genre__icontains=genre)
+                queryset = queryset.filter(genres__code=genre)
             if artist:
                 queryset = queryset.filter(artists__name__icontains=artist)
             if album:
@@ -69,7 +69,7 @@ class TrackList(generics.ListCreateAPIView):
         return queryset.distinct()
 
 class TrackDetail(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Track.objects.all().select_related('album').prefetch_related('artists')
+    queryset = Track.objects.all().select_related('album').prefetch_related('artists', 'genres')
     serializer_class = TrackSerializer
 
 class CommentList(generics.ListCreateAPIView):
@@ -85,8 +85,6 @@ class CommentList(generics.ListCreateAPIView):
 class CommentDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
-
-# === Autocomplete API ===
 
 def autocomplete_artists(request):
     query = request.GET.get('q', '').strip()
@@ -106,24 +104,22 @@ def autocomplete_albums(request):
         data = []
     return JsonResponse(data, safe=False)
 
-# === HTML Views ===
-
 def home_page(request):
     search_query = request.GET.get('search', '')
     genre_filter = request.GET.get('genre', '')
     artist_filter = request.GET.get('artist', '')
 
-    tracks = Track.objects.all().select_related('album').prefetch_related('artists')
+    tracks = Track.objects.all().select_related('album').prefetch_related('artists', 'genres')
 
     if search_query:
         tracks = tracks.filter(
             Q(title__icontains=search_query) |
-            Q(genre__icontains=search_query) |
+            Q(genres__name__icontains=search_query) |
             Q(artists__name__icontains=search_query) |
             Q(album__title__icontains=search_query)
         ).distinct()
     if genre_filter:
-        tracks = tracks.filter(genre=genre_filter)
+        tracks = tracks.filter(genres__code=genre_filter)
     if artist_filter:
         tracks = tracks.filter(artists__name__icontains=artist_filter)
 
@@ -133,7 +129,7 @@ def home_page(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    all_genres = Track.GENRE_CHOICES
+    all_genres = Genre.objects.all()
     all_artists = Artist.objects.all()
 
     context = {
@@ -151,9 +147,11 @@ def upload_page(request):
         form = TrackUploadForm(request.POST, request.FILES)
         if form.is_valid():
             form.save()
-            messages.success(request, 'Трек успешно загружен и доступен для скачивания!')
+            messages.success(request, 'Трек успешно загружен!')
             return redirect('home')
     else:
         form = TrackUploadForm()
 
-    return render(request, 'upload.html', {'form': form})
+    # Передаём список жанров в шаблон для JS
+    genres = Genre.objects.all()
+    return render(request, 'upload.html', {'form': form, 'genres': genres})
