@@ -61,25 +61,27 @@
         border-radius: 4px;
         cursor: pointer;
       }
-      .hidden {
-        display: none;
-      }
       .suggestions {
         position: absolute;
         background: white;
         border: 1px solid #ccc;
-        z-index: 100;
+        z-index: 1000;
         width: 100%;
         max-height: 150px;
         overflow-y: auto;
         display: none;
+        border-top: none;
+        border-bottom-left-radius: 6px;
+        border-bottom-right-radius: 6px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.08);
       }
       .suggestions div {
-        padding: 8px;
+        padding: 8px 14px;
         cursor: pointer;
+        font-size: 15px;
       }
       .suggestions div:hover {
-        background: #f0f0f0;
+        background: #e9ecef;
       }
       button[type="submit"] {
         background: #007bff;
@@ -89,16 +91,31 @@
         border-radius: 4px;
         cursor: pointer;
         margin-top: 10px;
+        width: 100%;
       }
       button[type="submit"]:hover {
         background: #0056b3;
       }
       .messages {
         margin-bottom: 20px;
+        padding: 12px;
+        background: #d4edda;
+        border: 1px solid #c3e6cb;
+        border-radius: 6px;
+        color: #155724;
+        font-weight: 500;
       }
-      .messages li {
-        color: green;
+      .error-messages {
+        color: red;
+        background: #f8d7da;
+        padding: 10px;
+        border-radius: 4px;
+        margin-bottom: 20px;
+      }
+      .error-messages ul {
         list-style: none;
+        padding: 0;
+        margin: 0;
       }
       a.back {
         display: inline-block;
@@ -113,11 +130,27 @@
       <h1>Загрузить трек</h1>
 
       {% if messages %}
-      <ul class="messages">
-        {% for message in messages %}
-        <li>{{ message }}</li>
-        {% endfor %}
-      </ul>
+        <ul class="messages">
+          {% for message in messages %}
+            <li>{{ message }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+
+      {% if form.errors %}
+        <div class="error-messages">
+          <p><strong>Ошибки в форме:</strong></p>
+          <ul>
+            {% for field in form %}
+              {% for error in field.errors %}
+                <li>{{ field.label }}: {{ error }}</li>
+              {% endfor %}
+            {% endfor %}
+            {% for error in form.non_field_errors %}
+              <li>{{ error }}</li>
+            {% endfor %}
+          </ul>
+        </div>
       {% endif %}
 
       <form
@@ -182,11 +215,10 @@
         </div>
 
         <!-- Скрытое поле для отправки жанров -->
-        {{ form.genres }}
+        <div id="genres-hidden-container"></div>
 
         <button type="submit">Загрузить трек</button>
       </form>
-      <br />
       <a href="{% url 'home' %}" class="back">← Назад на главную</a>
     </div>
 
@@ -274,14 +306,15 @@
           container.appendChild(div);
         });
 
-        // Обновляем скрытое поле формы (важно для отправки данных)
-        const hiddenSelect = document.querySelector('select[name="genres"]');
-        hiddenSelect.innerHTML = "";
+        // Обновляем скрытые поля формы
+        const hiddenContainer = document.getElementById('genres-hidden-container');
+        hiddenContainer.innerHTML = "";
         selectedGenresArray.forEach((code) => {
-          const opt = document.createElement("option");
-          opt.value = code;
-          opt.selected = true;
-          hiddenSelect.appendChild(opt);
+          const input = document.createElement("input");
+          input.type = "hidden";
+          input.name = "genres"; // 👈 Важно: имя должно совпадать с полем формы
+          input.value = code;
+          hiddenContainer.appendChild(input);
         });
       }
 
@@ -308,7 +341,7 @@
         renderGenres();
       });
 
-      // Автокомплит (оставляем без изменений)
+      // Автокомплит
       function setupAutocomplete(inputId, apiUrl, suggestionsId) {
         const input = document.getElementById(inputId);
         const suggestions = document.getElementById(suggestionsId);
@@ -355,17 +388,16 @@
         );
 
         // Инициализация рендеринга (если нужно восстановить состояние из формы)
-        const hiddenSelect = document.querySelector('select[name="genres"]');
-        if (hiddenSelect && hiddenSelect.options.length > 0) {
-          for (let i = 0; i < hiddenSelect.options.length; i++) {
-            const option = hiddenSelect.options[i];
-            if (option.selected) {
-              // Добавляем в массив только если его ещё нет (избегаем дубликатов)
-              if (!selectedGenresArray.includes(option.value)) {
-                selectedGenresArray.push(option.value);
+        const hiddenContainer = document.getElementById('genres-hidden-container');
+        if (hiddenContainer) {
+          const inputs = hiddenContainer.querySelectorAll('input[name="genres"]');
+          inputs.forEach((input) => {
+            if (input.value) {
+              if (!selectedGenresArray.includes(input.value)) {
+                selectedGenresArray.push(input.value);
               }
             }
-          }
+          });
         }
 
         // Рендерим начальное состояние

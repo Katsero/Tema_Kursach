@@ -1,14 +1,12 @@
-# music/forms.py
 from django import forms
 from django.core.exceptions import ValidationError
 from .models import Track, Artist, Album, Genre
 
-class GenreMultiWidget(forms.SelectMultiple):
-    def __init__(self, attrs=None):
-        super().__init__(attrs)
-        self.attrs = {'class': 'genre-select hidden'}
-
 class GenreMultiField(forms.ModelMultipleChoiceField):
+    def __init__(self, *args, **kwargs):
+        kwargs['to_field_name'] = 'code'  # Ищем по code
+        super().__init__(*args, **kwargs)
+
     def validate(self, value):
         super().validate(value)
         if len(value) != len(set(value)):
@@ -27,10 +25,8 @@ class TrackUploadForm(forms.ModelForm):
         label="Альбом",
         widget=forms.TextInput(attrs={'placeholder': 'Название альбома', 'id': 'album-input'})
     )
-    # Поле жанров — скрытое, управляем через JS
     genres = GenreMultiField(
         queryset=Genre.objects.all(),
-        widget=GenreMultiWidget(),
         required=False,
         label="Жанры"
     )
@@ -59,7 +55,7 @@ class TrackUploadForm(forms.ModelForm):
         artist_name = self.cleaned_data.get('artist_name')
         if artist_name:
             artist, _ = Artist.objects.get_or_create(name=artist_name.strip())
-            # Не добавляем сразу — сохраним track сначала
+            track.artists.add(artist)
 
         album_title = self.cleaned_data.get('album_title')
         if album_title:
@@ -68,9 +64,6 @@ class TrackUploadForm(forms.ModelForm):
 
         if commit:
             track.save()
-            # Теперь track имеет id — можно добавлять ManyToMany
-            if artist_name:
-                track.artists.add(artist)
             self.save_m2m()
 
         return track
