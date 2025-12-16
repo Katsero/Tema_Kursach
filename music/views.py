@@ -104,10 +104,21 @@ def autocomplete_albums(request):
         data = []
     return JsonResponse(data, safe=False)
 
+# === Основные страницы ===
+
 def home_page(request):
     search_query = request.GET.get('search', '')
     genre_filter = request.GET.get('genre', '')
     artist_filter = request.GET.get('artist', '')
+    page_size = request.GET.get('page_size', '12')  # По умолчанию 12
+
+    # Допустимые значения
+    try:
+        page_size = int(page_size)
+        if page_size not in [6, 12, 24]:
+            page_size = 12
+    except (ValueError, TypeError):
+        page_size = 12
 
     tracks = Track.objects.all().select_related('album').prefetch_related('artists', 'genres')
 
@@ -125,7 +136,7 @@ def home_page(request):
 
     tracks = tracks.order_by('-uploaded_at')
 
-    paginator = Paginator(tracks, 10)
+    paginator = Paginator(tracks, page_size)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
@@ -139,6 +150,7 @@ def home_page(request):
         'artist_filter': artist_filter,
         'all_genres': all_genres,
         'all_artists': all_artists,
+        'page_size': page_size,
     }
     return render(request, 'home.html', context)
 

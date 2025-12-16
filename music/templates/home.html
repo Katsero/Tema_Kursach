@@ -6,13 +6,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Анонимная музыкальная библиотека</title>
 <style>
+  * {
+  box-sizing: border-box;
+  }
   body {
     font-family: Arial, sans-serif;
     background: #f9f9f9;
     color: #333;
     margin: 0;
     padding: 20px;
-
     max-width: 1440px;
     margin: 0 auto;
   }
@@ -39,17 +41,19 @@
     border-radius: 4px;
   }
 
-  .track-list {
-    display: grid;
-    gap: 15px;
-  }
+.track-list {
+  display: grid;
+  gap: 15px;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
 
-  .track-card {
-    background: white;
-    padding: 15px;
-    border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  }
+.track-card {
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  width: 100%;
+}
 
   .track-meta {
     margin: 10px 0;
@@ -80,6 +84,8 @@
     border: 1px solid #ddd;
     text-decoration: none;
     color: #007bff;
+    padding: 8px 12px;
+    border-radius: 4px;
   }
 
   .pagination .current {
@@ -100,33 +106,38 @@
       </a>
     </header>
     
-    <div class="search-container">
-      <form method="get">
-        <input
-        type="text"
-        name="search"
-        value="{{ search_query }}"
-        placeholder="Поиск по названию, жанру, исполнителю..."
-        />
-        <select name="genre">
-          <option value="">Любой жанр</option>
-          {% for genre in all_genres %}
-          <option value="{{ genre.code }}" {% if genre.code == genre_filter %}selected{% endif %}>
-            {{ genre.name }}
-          </option>
-          {% endfor %}
-        </select>
-        <select name="artist">
-          <option value="">Любой исполнитель</option>
-          {% for artist in all_artists %}
-          <option value="{{ artist.name }}" {% if artist.name == artist_filter %}selected{% endif %}>
-            {{ artist.name }}
-          </option>
-          {% endfor %}
-        </select>
-        <button type="submit">Найти</button>
-      </form>
-    </div>
+<div class="search-container">
+  <form method="get" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: end;">
+    <input
+      type="text"
+      name="search"
+      value="{{ search_query }}"
+      placeholder="Поиск по названию, жанру, исполнителю..."
+    />
+    <select name="genre">
+      <option value="">Любой жанр</option>
+      {% for genre in all_genres %}
+        <option value="{{ genre.code }}" {% if genre.code == genre_filter %}selected{% endif %}>
+          {{ genre.name }}
+        </option>
+      {% endfor %}
+    </select>
+    <select name="artist">
+      <option value="">Любой исполнитель</option>
+      {% for artist in all_artists %}
+        <option value="{{ artist.name }}" {% if artist.name == artist_filter %}selected{% endif %}>
+          {{ artist.name }}
+        </option>
+      {% endfor %}
+    </select>
+    <select name="page_size">
+      <option value="6" {% if page_size == 6 %}selected{% endif %}>6 треков</option>
+      <option value="12" {% if page_size == 12 %}selected{% endif %}>12 треков</option>
+      <option value="24" {% if page_size == 24 %}selected{% endif %}>24 трека</option>
+    </select>
+    <button type="submit">Найти</button>
+  </form>
+</div>
     
     {% if page_obj %}
     <div class="track-list">
@@ -175,31 +186,24 @@
     </div>
     
     <!-- Пагинация -->
-    <div class="pagination">
-      {% if page_obj.has_previous %}
-      <a href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if genre_filter %}&genre={{ genre_filter }}{% endif %}{% if artist_filter %}&artist={{ artist_filter }}{% endif %}">
-        « Первая
-      </a>
-      <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if genre_filter %}&genre={{ genre_filter }}{% endif %}{% if artist_filter %}&artist={{ artist_filter }}{% endif %}">
-        ‹ Предыдущая
-      </a>
-      {% endif %}
-      
-      <span class="current">
-        Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}
-      </span>
-      
-      {% if page_obj.has_next %}
-      <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if genre_filter %}&genre={{ genre_filter }}{% endif %}{% if artist_filter %}&artist={{ artist_filter }}{% endif %}">
-        Следующая ›
-      </a>
-      <a href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if genre_filter %}&genre={{ genre_filter }}{% endif %}{% if artist_filter %}&artist={{ artist_filter }}{% endif %}">
-        Последняя »
-      </a>
-      {% endif %}
-    </div>
+<!-- Пагинация -->
+<div class="pagination">
+  {% if page_obj.has_previous %}
+    <a href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if genre_filter %}&genre={{ genre_filter }}{% endif %}{% if artist_filter %}&artist={{ artist_filter }}{% endif %}&page_size={{ page_size }}">« Первая</a>
+    <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if genre_filter %}&genre={{ genre_filter }}{% endif %}{% if artist_filter %}&artist={{ artist_filter }}{% endif %}&page_size={{ page_size }}">‹ Предыдущая</a>
+  {% endif %}
+
+  <span class="current">
+    Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}
+  </span>
+
+  {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if genre_filter %}&genre={{ genre_filter }}{% endif %}{% if artist_filter %}&artist={{ artist_filter }}{% endif %}&page_size={{ page_size }}">Следующая ›</a>
+    <a href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if genre_filter %}&genre={{ genre_filter }}{% endif %}{% if artist_filter %}&artist={{ artist_filter }}{% endif %}&page_size={{ page_size }}">Последняя »</a>
+  {% endif %}
+</div>
     {% else %}
     <p>Ошибка загрузки треков.</p>
     {% endif %}
   </body>
-  </html>
+</html>
