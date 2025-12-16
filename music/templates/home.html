@@ -5,187 +5,201 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Анонимная музыкальная библиотека</title>
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-        margin: 20px;
-        background: #f9f9f9;
-        color: #333;
-      }
-      header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 20px;
-      }
-      .search-container {
-        display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
-      }
-      .search-container input,
-      .search-container select,
-      .search-container button {
-        padding: 8px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-      }
-      .track-list {
-        display: grid;
-        gap: 15px;
-      }
-      .track-card {
-        background: white;
-        padding: 15px;
-        border-radius: 8px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-      }
-      .track-meta {
-        margin: 10px 0;
-        font-size: 0.9em;
-        color: #555;
-      }
-      .track-actions {
-        margin-top: 10px;
-      }
-      .track-actions a {
-        margin-right: 15px;
-        text-decoration: none;
-        color: #007bff;
-      }
-      .pagination {
-        margin-top: 20px;
-        text-align: center;
-      }
-      .pagination a,
-      .pagination span {
-        display: inline-block;
-        padding: 5px 10px;
-        margin: 0 5px;
-        border: 1px solid #ddd;
-        text-decoration: none;
-        color: #007bff;
-      }
-      .pagination .current {
-        background: #007bff;
-        color: white;
-        border-color: #007bff;
-      }
-    </style>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #f9f9f9;
+    color: #333;
+    margin: 0;
+    padding: 20px;
+
+    max-width: 1440px;
+    margin: 0 auto;
+  }
+
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+
+  .search-container {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+
+  .search-container input,
+  .search-container select,
+  .search-container button {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+
+  .track-list {
+    display: grid;
+    gap: 15px;
+  }
+
+  .track-card {
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  .track-meta {
+    margin: 10px 0;
+    font-size: 0.9em;
+    color: #555;
+  }
+
+  .track-actions {
+    margin-top: 10px;
+  }
+
+  .track-actions a {
+    margin-right: 15px;
+    text-decoration: none;
+    color: #007bff;
+  }
+
+  .pagination {
+    margin-top: 20px;
+    text-align: center;
+  }
+
+  .pagination a,
+  .pagination span {
+    display: inline-block;
+    padding: 5px 10px;
+    margin: 0 5px;
+    border: 1px solid #ddd;
+    text-decoration: none;
+    color: #007bff;
+  }
+
+  .pagination .current {
+    background: #007bff;
+    color: white;
+    border-color: #007bff;
+  }
+</style>
   </head>
   <body>
-    <header>
-      <h1>Анонимная музыкальная библиотека</h1>
-      <a
+      <header>
+        <h1>Анонимная музыкальная библиотека</h1>
+        <a
         href="{% url 'upload' %}"
         style="padding: 8px 16px; background: #28a745; color: white; text-decoration: none; border-radius: 4px;"
-      >
+        >
         Загрузить трек
       </a>
     </header>
-
+    
     <div class="search-container">
       <form method="get">
         <input
-          type="text"
-          name="search"
-          value="{{ search_query }}"
-          placeholder="Поиск по названию, жанру, исполнителю..."
+        type="text"
+        name="search"
+        value="{{ search_query }}"
+        placeholder="Поиск по названию, жанру, исполнителю..."
         />
         <select name="genre">
           <option value="">Любой жанр</option>
           {% for genre in all_genres %}
-            <option value="{{ genre.code }}" {% if genre.code == genre_filter %}selected{% endif %}>
-              {{ genre.name }}
-            </option>
+          <option value="{{ genre.code }}" {% if genre.code == genre_filter %}selected{% endif %}>
+            {{ genre.name }}
+          </option>
           {% endfor %}
         </select>
         <select name="artist">
           <option value="">Любой исполнитель</option>
           {% for artist in all_artists %}
-            <option value="{{ artist.name }}" {% if artist.name == artist_filter %}selected{% endif %}>
-              {{ artist.name }}
-            </option>
+          <option value="{{ artist.name }}" {% if artist.name == artist_filter %}selected{% endif %}>
+            {{ artist.name }}
+          </option>
           {% endfor %}
         </select>
         <button type="submit">Найти</button>
       </form>
     </div>
-
+    
     {% if page_obj %}
-      <div class="track-list">
-        {% for track in page_obj %}
-          <div class="track-card">
-            <h3>{{ track.title }}</h3>
-            <div class="track-meta">
-              <p><strong>Загрузил:</strong> {{ track.uploaded_by }}</p>
-              <p>
-                <strong>Альбом:</strong>
-                {% if track.album %}
-                  {{ track.album.title }}
-                {% else %}
-                  Не указан
-                {% endif %}
-              </p>
-              <p>
-                <strong>Жанры:</strong>
-                {% for genre in track.genres.all %}
-                  {{ genre.name }}
-                  {% if not forloop.last %}, {% endif %}
-                {% empty %}
-                  Не указаны
-                {% endfor %}
-              </p>
-              <p>
-                <strong>Исполнители:</strong>
-                {% for artist in track.artists.all %}
-                  {{ artist.name }}
-                  {% if not forloop.last %}, {% endif %}
-                {% empty %}
-                  Не указаны
-                {% endfor %}
-              </p>
-            </div>
-            <div class="track-actions">
-              <audio controls style="width: 100%;">
-                <source src="{{ track.audio_file.url }}" type="audio/mpeg" />
-                Ваш браузер не поддерживает аудио.
-              </audio>
-              <br />
-              <a href="{{ track.audio_file.url }}" download>Скачать</a>
-            </div>
-          </div>
-        {% empty %}
-          <p>Нет треков по вашему запросу.</p>
-        {% endfor %}
+    <div class="track-list">
+      {% for track in page_obj %}
+      <div class="track-card">
+        <h3>{{ track.title }}</h3>
+        <div class="track-meta">
+          <p><strong>Загрузил:</strong> {{ track.uploaded_by }}</p>
+          <p>
+            <strong>Альбом:</strong>
+            {% if track.album %}
+            {{ track.album.title }}
+            {% else %}
+            Не указан
+            {% endif %}
+          </p>
+          <p>
+            <strong>Жанры:</strong>
+            {% for genre in track.genres.all %}
+            {{ genre.name }}
+            {% if not forloop.last %}, {% endif %}
+            {% empty %}
+            Не указаны
+            {% endfor %}
+          </p>
+          <p>
+            <strong>Исполнители:</strong>
+            {% for artist in track.artists.all %}
+            {{ artist.name }}
+            {% if not forloop.last %}, {% endif %}
+            {% empty %}
+            Не указаны
+            {% endfor %}
+          </p>
+        </div>
+        <div class="track-actions">
+          <audio controls style="width: 100%">
+            <source src="{{ track.audio_file.url }}" type="audio/mpeg" />
+            Ваш браузер не поддерживает аудио.
+          </audio>
+        </div>
       </div>
-
-      <!-- Пагинация -->
-      <div class="pagination">
-        {% if page_obj.has_previous %}
-          <a href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if genre_filter %}&genre={{ genre_filter }}{% endif %}{% if artist_filter %}&artist={{ artist_filter }}{% endif %}">
-            « Первая
-          </a>
-          <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if genre_filter %}&genre={{ genre_filter }}{% endif %}{% if artist_filter %}&artist={{ artist_filter }}{% endif %}">
-            ‹ Предыдущая
-          </a>
-        {% endif %}
-
-        <span class="current">
-          Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}
-        </span>
-
-        {% if page_obj.has_next %}
-          <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if genre_filter %}&genre={{ genre_filter }}{% endif %}{% if artist_filter %}&artist={{ artist_filter }}{% endif %}">
-            Следующая ›
-          </a>
-          <a href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if genre_filter %}&genre={{ genre_filter }}{% endif %}{% if artist_filter %}&artist={{ artist_filter }}{% endif %}">
-            Последняя »
-          </a>
-        {% endif %}
-      </div>
+      {% empty %}
+      <p>Нет треков по вашему запросу.</p>
+      {% endfor %}
+    </div>
+    
+    <!-- Пагинация -->
+    <div class="pagination">
+      {% if page_obj.has_previous %}
+      <a href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if genre_filter %}&genre={{ genre_filter }}{% endif %}{% if artist_filter %}&artist={{ artist_filter }}{% endif %}">
+        « Первая
+      </a>
+      <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if genre_filter %}&genre={{ genre_filter }}{% endif %}{% if artist_filter %}&artist={{ artist_filter }}{% endif %}">
+        ‹ Предыдущая
+      </a>
+      {% endif %}
+      
+      <span class="current">
+        Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}
+      </span>
+      
+      {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if genre_filter %}&genre={{ genre_filter }}{% endif %}{% if artist_filter %}&artist={{ artist_filter }}{% endif %}">
+        Следующая ›
+      </a>
+      <a href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if genre_filter %}&genre={{ genre_filter }}{% endif %}{% if artist_filter %}&artist={{ artist_filter }}{% endif %}">
+        Последняя »
+      </a>
+      {% endif %}
+    </div>
     {% else %}
-      <p>Ошибка загрузки треков.</p>
+    <p>Ошибка загрузки треков.</p>
     {% endif %}
   </body>
-</html>
+  </html>
