@@ -4,7 +4,7 @@ from .models import Track, Artist, Album, Genre
 
 class GenreMultiField(forms.ModelMultipleChoiceField):
     def __init__(self, *args, **kwargs):
-        kwargs['to_field_name'] = 'code'  # Ищем по code
+        kwargs['to_field_name'] = 'code'
         super().__init__(*args, **kwargs)
 
     def validate(self, value):
@@ -13,11 +13,9 @@ class GenreMultiField(forms.ModelMultipleChoiceField):
             raise ValidationError("Нельзя выбрать один жанр дважды.")
 
 class TrackUploadForm(forms.ModelForm):
-    artist_name = forms.CharField(
-        max_length=100,
+    artist_names = forms.CharField(
         required=False,
-        label="Исполнитель",
-        widget=forms.TextInput(attrs={'placeholder': 'Например: Кипелов', 'id': 'artist-input'})
+        widget=forms.HiddenInput()
     )
     album_title = forms.CharField(
         max_length=200,
@@ -33,7 +31,7 @@ class TrackUploadForm(forms.ModelForm):
 
     class Meta:
         model = Track
-        fields = ['title', 'audio_file', 'uploaded_by', 'album_title', 'artist_name', 'genres']
+        fields = ['title', 'audio_file', 'uploaded_by', 'album_title', 'artist_names', 'genres']
         widgets = {
             'uploaded_by': forms.TextInput(attrs={'placeholder': 'Ваш ник (по умолчанию: Аноним)'}),
             'title': forms.TextInput(attrs={'placeholder': 'Название трека (по умолчанию: Unnamed)'}),
@@ -52,18 +50,21 @@ class TrackUploadForm(forms.ModelForm):
     def save(self, commit=True):
         track = super().save(commit=False)
 
-        artist_name = self.cleaned_data.get('artist_name')
-        if artist_name:
-            artist, _ = Artist.objects.get_or_create(name=artist_name.strip())
-            track.artists.add(artist)
-
-        album_title = self.cleaned_data.get('album_title')
-        if album_title:
-            album, _ = Album.objects.get_or_create(title=album_title.strip())
-            track.album = album
-
         if commit:
             track.save()
+            # Теперь track имеет id — можно добавлять ManyToMany
+            artist_names_str = self.cleaned_data.get('artist_names')
+            if artist_names_str:
+                artist_names = [name.strip() for name in artist_names_str.split('|') if name.strip()]
+                for name in artist_names:
+                    artist, _ = Artist.objects.get_or_create(name=name)
+                    track.artists.add(artist)
+
+            album_title = self.cleaned_data.get('album_title')
+            if album_title:
+                album, _ = Album.objects.get_or_create(title=album_title.strip())
+                track.album = album
+
             self.save_m2m()
 
         return track
