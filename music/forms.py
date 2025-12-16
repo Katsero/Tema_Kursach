@@ -59,7 +59,7 @@ class TrackUploadForm(forms.ModelForm):
         artist_name = self.cleaned_data.get('artist_name')
         if artist_name:
             artist, _ = Artist.objects.get_or_create(name=artist_name.strip())
-            track.artists.add(artist)
+            # Не добавляем сразу — сохраним track сначала
 
         album_title = self.cleaned_data.get('album_title')
         if album_title:
@@ -68,6 +68,9 @@ class TrackUploadForm(forms.ModelForm):
 
         if commit:
             track.save()
+            # Теперь track имеет id — можно добавлять ManyToMany
+            if artist_name:
+                track.artists.add(artist)
             self.save_m2m()
 
         return track
