@@ -1,16 +1,8 @@
 <!-- music/templates/upload.html -->
-<!doctype html>
-<html lang="ru">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Загрузить трек</title>
- <style>
-  body {
-    font-family: Arial, sans-serif;
-    margin: 20px;
-    background: #f9f9f9;
-  }
+{% extends "base.html" %}
+{% block title %}Загрузить трек{% endblock %}
+{% block extra_css %}
+<style>
   .upload-form {
     background: white;
     padding: 20px;
@@ -41,7 +33,7 @@
     display: flex;
     gap: 5px;
     margin-top: 5px;
-    position: relative; /* 👈 Добавлено */
+    position: relative; 
   }
   .artist-field input,
   .genre-field select {
@@ -70,7 +62,7 @@
   }
   .suggestions {
     position: absolute;
-    top: 100%; /* Появляется снизу от поля */
+    top: 100%;
     left: 0;
     background: white;
     border: 1px solid #ccc;
@@ -106,15 +98,6 @@
   button[type="submit"]:hover {
     background: #0056b3;
   }
-  .messages {
-    margin-bottom: 20px;
-    padding: 12px;
-    background: #d4edda;
-    border: 1px solid #c3e6cb;
-    border-radius: 6px;
-    color: #155724;
-    font-weight: 500;
-  }
   .error-messages {
     color: red;
     background: #f8d7da;
@@ -134,319 +117,292 @@
     text-decoration: none;
   }
 </style>
-  </head>
-  <body>
-    <div class="upload-form">
-      <h1>Загрузить трек</h1>
+{% endblock %}
+{% block content %}
+<div class="upload-form">
+  <h1>Загрузить трек</h1>
 
-      {% if messages %}
-        <ul class="messages">
-          {% for message in messages %}
-            <li>{{ message }}</li>
+  {% if form.errors %}
+    <div class="error-messages">
+      <p><strong>Ошибки в форме:</strong></p>
+      <ul>
+        {% for field in form %}
+          {% for error in field.errors %}
+            <li>{{ field.label }}: {{ error }}</li>
           {% endfor %}
-        </ul>
-      {% endif %}
+        {% endfor %}
+        {% for error in form.non_field_errors %}
+          <li>{{ error }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
 
-      {% if form.errors %}
-        <div class="error-messages">
-          <p><strong>Ошибки в форме:</strong></p>
-          <ul>
-            {% for field in form %}
-              {% for error in field.errors %}
-                <li>{{ field.label }}: {{ error }}</li>
-              {% endfor %}
-            {% endfor %}
-            {% for error in form.non_field_errors %}
-              <li>{{ error }}</li>
-            {% endfor %}
-          </ul>
-        </div>
-      {% endif %}
-
-      <form
-        method="post"
-        enctype="multipart/form-data"
-        id="upload-form"
-        data-genres='[ {% for genre in genres %}{"code": "{{ genre.code }}", "name": "{{ genre.name }}"}{% if not forloop.last %}, {% endif %}{% endfor %} ]'
-      >
-        {% csrf_token %}
-        <div class="form-group">
-          <label>Ваш ник:</label>
-          <input
-            type="text"
-            name="uploaded_by"
-            placeholder="Аноним (по умолчанию)"
-            value="{{ form.uploaded_by.value|default:'' }}"
-          />
-        </div>
-        <div class="form-group">
-          <label>Название трека:</label>
-          <input
-            type="text"
-            name="title"
-            placeholder="Unnamed (по умолчанию)"
-            value="{{ form.title.value|default:'' }}"
-          />
-        </div>
-        <div class="form-group">
-          <label>Аудиофайл (.mp3/.wav, до 20 МБ):</label>
-          {{ form.audio_file }}
-        </div>
-
-        <!-- Исполнители -->
-        <div class="form-group">
-          <label>Исполнители:</label>
-          <div id="artists-container">
-            <!-- Изначально пусто -->
-          </div>
-          <button type="button" id="add-artist" class="add-artist-btn">
-            Добавить исполнителя
-          </button>
-        </div>
-
-        <!-- Альбом -->
-        <div class="form-group">
-          <label>Альбом (необязательно):</label>
-          <input
-            type="text"
-            id="album-input"
-            name="album_title"
-            placeholder="Название альбома"
-          />
-          <div id="album-suggestions" class="suggestions"></div>
-        </div>
-
-        <!-- Жанры -->
-        <div class="form-group">
-          <label>Жанры:</label>
-          <div id="genres-container">
-            <!-- Изначально пусто -->
-          </div>
-          <button type="button" id="add-genre" class="add-genre-btn">
-            Добавить жанр
-          </button>
-        </div>
-
-        <!-- Скрытые поля для отправки -->
-        <input type="hidden" name="artist_names" id="artist-names-hidden" />
-        <div id="genres-hidden-container"></div>
-
-        <button type="submit">Загрузить трек</button>
-      </form>
-      <a href="{% url 'home' %}" class="back">← Назад на главную</a>
+  <form
+    method="post"
+    enctype="multipart/form-data"
+    id="upload-form"
+    data-genres='[ {% for genre in genres %}{"code": "{{ genre.code }}", "name": "{{ genre.name }}"}{% if not forloop.last %}, {% endif %}{% endfor %} ]'
+  >
+    {% csrf_token %}
+    <div class="form-group">
+      <label>Ваш ник:</label>
+      <input
+        type="text"
+        name="uploaded_by"
+        placeholder="Аноним (по умолчанию)"
+        value="{{ form.uploaded_by.value|default:'' }}"
+      />
+    </div>
+    <div class="form-group">
+      <label>Название трека:</label>
+      <input
+        type="text"
+        name="title"
+        placeholder="Unnamed (по умолчанию)"
+        value="{{ form.title.value|default:'' }}"
+      />
+    </div>
+    <div class="form-group">
+      <label>Аудиофайл (.mp3/.wav, до 20 МБ):</label>
+      {{ form.audio_file }}
     </div>
 
-    <script>
-      // === ЖАНРЫ ===
-      const allGenres = JSON.parse(
-        document.getElementById("upload-form").dataset.genres
-      );
-      let selectedGenresArray = [];
+    <div class="form-group">
+      <label>Исполнители:</label>
+      <div id="artists-container">
+      </div>
+      <button type="button" id="add-artist" class="add-artist-btn">
+        Добавить исполнителя
+      </button>
+    </div>
 
-      function renderGenres() {
-        const container = document.getElementById("genres-container");
-        container.innerHTML = "";
+    <div class="form-group">
+      <label>Альбом (необязательно):</label>
+      <input
+        type="text"
+        id="album-input"
+        name="album_title"
+        placeholder="Название альбома"
+      />
+      <div id="album-suggestions" class="suggestions"></div>
+    </div>
 
-        selectedGenresArray.forEach((code, index) => {
-          const genre = allGenres.find((g) => g.code === code);
-          if (!genre) return;
+    <div class="form-group">
+      <label>Жанры:</label>
+      <div id="genres-container">
+      </div>
+      <button type="button" id="add-genre" class="add-genre-btn">
+        Добавить жанр
+      </button>
+    </div>
 
-          const div = document.createElement("div");
-          div.className = "genre-field";
+    <input type="hidden" name="artist_names" id="artist-names-hidden" />
+    <div id="genres-hidden-container"></div>
 
-          const select = document.createElement("select");
-          select.dataset.index = index;
+    <button type="submit">Загрузить трек</button>
+  </form>
+  <a href="{% url 'home' %}" class="back">← Назад на главную</a>
+</div>
 
-          allGenres.forEach((g) => {
-            if (selectedGenresArray.includes(g.code) && g.code !== code) return;
-            const opt = document.createElement("option");
-            opt.value = g.code;
-            opt.textContent = g.name;
-            if (g.code === code) opt.selected = true;
-            select.appendChild(opt);
-          });
+<script>
+  const allGenres = JSON.parse(
+    document.getElementById("upload-form").dataset.genres
+  );
+  let selectedGenresArray = [];
 
-          select.addEventListener("change", () => {
-            const oldIndex = parseInt(select.dataset.index);
-            const oldCode = selectedGenresArray[oldIndex];
-            const newCode = select.value;
+  function renderGenres() {
+    const container = document.getElementById("genres-container");
+    container.innerHTML = "";
 
-            if (selectedGenresArray.includes(newCode)) {
-              selectedGenresArray.splice(oldIndex, 1);
-              renderGenres();
-              return;
-            }
+    selectedGenresArray.forEach((code, index) => {
+      const genre = allGenres.find((g) => g.code === code);
+      if (!genre) return;
 
-            selectedGenresArray[oldIndex] = newCode;
-            renderGenres();
-          });
+      const div = document.createElement("div");
+      div.className = "genre-field";
 
-          const removeBtn = document.createElement("button");
-          removeBtn.type = "button";
-          removeBtn.className = "remove-genre";
-          removeBtn.textContent = "✕";
-          removeBtn.addEventListener("click", () => {
-            selectedGenresArray.splice(index, 1);
-            renderGenres();
-          });
+      const select = document.createElement("select");
+      select.dataset.index = index;
 
-          div.appendChild(select);
-          div.appendChild(removeBtn);
-          container.appendChild(div);
-        });
+      allGenres.forEach((g) => {
+        if (selectedGenresArray.includes(g.code) && g.code !== code) return;
+        const opt = document.createElement("option");
+        opt.value = g.code;
+        opt.textContent = g.name;
+        if (g.code === code) opt.selected = true;
+        select.appendChild(opt);
+      });
 
-        const hiddenContainer = document.getElementById('genres-hidden-container');
-        hiddenContainer.innerHTML = "";
-        selectedGenresArray.forEach((code) => {
-          const input = document.createElement("input");
-          input.type = "hidden";
-          input.name = "genres";
-          input.value = code;
-          hiddenContainer.appendChild(input);
-        });
-      }
+      select.addEventListener("change", () => {
+        const oldIndex = parseInt(select.dataset.index);
+        const oldCode = selectedGenresArray[oldIndex];
+        const newCode = select.value;
 
-      document.getElementById("add-genre").addEventListener("click", () => {
-        if (selectedGenresArray.length >= allGenres.length) {
-          alert("Нельзя выбрать больше жанров!");
+        if (selectedGenresArray.includes(newCode)) {
+          selectedGenresArray.splice(oldIndex, 1);
+          renderGenres();
           return;
         }
-        const availableGenre = allGenres.find((g) => !selectedGenresArray.includes(g.code));
-        if (!availableGenre) {
-          alert("Все жанры уже выбраны.");
-          return;
-        }
-        selectedGenresArray.push(availableGenre.code);
+
+        selectedGenresArray[oldIndex] = newCode;
         renderGenres();
       });
 
-      // === ИСПОЛНИТЕЛИ ===
-      let artistFieldCounter = 1;
-
-      function createArtistField(value = '') {
-        const container = document.getElementById("artists-container");
-        const wrapper = document.createElement("div");
-        wrapper.className = "artist-field";
-
-        const input = document.createElement("input");
-        input.type = "text";
-        input.className = "artist-input";
-        input.placeholder = "Например: Кипелов";
-        input.value = value;
-
-        const inputId = `artist-input-${artistFieldCounter++}`;
-        input.id = inputId;
-
-        const suggestions = document.createElement("div");
-        suggestions.className = "artist-suggestions suggestions";
-        suggestions.id = `suggestions-${inputId}`;
-
-        const removeBtn = document.createElement("button");
-        removeBtn.type = "button";
-        removeBtn.className = "remove-artist";
-        removeBtn.textContent = "✕";
-        removeBtn.addEventListener("click", () => {
-          // Удаляем поле в любом случае
-          wrapper.remove();
-          updateArtistHiddenInput();
-        });
-
-        wrapper.appendChild(input);
-        wrapper.appendChild(suggestions);
-        wrapper.appendChild(removeBtn);
-
-        // Сначала добавляем в DOM
-        container.appendChild(wrapper);
-
-        // Затем настраиваем автокомплит
-        setupAutocomplete(inputId, "/api/artists/search/", suggestions.id);
-      }
-
-      function updateArtistHiddenInput() {
-        const inputs = document.querySelectorAll(".artist-input");
-        const names = Array.from(inputs)
-          .map(input => input.value.trim())
-          .filter(name => name);
-        document.getElementById("artist-names-hidden").value = names.join("|");
-      }
-
-      document.getElementById("add-artist").addEventListener("click", () => {
-        createArtistField();
+      const removeBtn = document.createElement("button");
+      removeBtn.type = "button";
+      removeBtn.className = "remove-genre";
+      removeBtn.textContent = "✕";
+      removeBtn.addEventListener("click", () => {
+        selectedGenresArray.splice(index, 1);
+        renderGenres();
       });
 
-      // === АВТОКОМПЛИТ ===
-      function setupAutocomplete(inputId, apiUrl, suggestionsId) {
-        const input = document.getElementById(inputId);
-        const suggestions = document.getElementById(suggestionsId);
-        if (!input || !suggestions) return;
+      div.appendChild(select);
+      div.appendChild(removeBtn);
+      container.appendChild(div);
+    });
 
-        // Удаляем старые обработчики, если они есть
-        input.removeEventListener("input", handleInput);
-        suggestions.removeEventListener("click", handleClickOutside);
+    const hiddenContainer = document.getElementById('genres-hidden-container');
+    hiddenContainer.innerHTML = "";
+    selectedGenresArray.forEach((code) => {
+      const input = document.createElement("input");
+      input.type = "hidden";
+      input.name = "genres";
+      input.value = code;
+      hiddenContainer.appendChild(input);
+    });
+  }
 
-        // Создаём новые обработчики
-        function handleInput() {
-          const query = input.value.trim();
-          if (query.length < 1) {
-            suggestions.style.display = "none";
-            return;
-          }
-          fetch(`${apiUrl}?q=${encodeURIComponent(query)}`)
-            .then((r) => r.json())
-            .then((data) => {
-              suggestions.innerHTML = "";
-              data.forEach((item) => {
-                const div = document.createElement("div");
-                div.textContent = item.name || item.title;
-                div.addEventListener("click", () => {
-                  input.value = item.name || item.title;
-                  suggestions.style.display = "none";
-                  updateArtistHiddenInput();
-                });
-                suggestions.appendChild(div);
-              });
-              suggestions.style.display = "block";
+  document.getElementById("add-genre").addEventListener("click", () => {
+    if (selectedGenresArray.length >= allGenres.length) {
+      alert("Нельзя выбрать больше жанров!");
+      return;
+    }
+    const availableGenre = allGenres.find((g) => !selectedGenresArray.includes(g.code));
+    if (!availableGenre) {
+      alert("Все жанры уже выбраны.");
+      return;
+    }
+    selectedGenresArray.push(availableGenre.code);
+    renderGenres();
+  });
+
+  let artistFieldCounter = 1;
+
+  function createArtistField(value = '') {
+    const container = document.getElementById("artists-container");
+    const wrapper = document.createElement("div");
+    wrapper.className = "artist-field";
+
+    const input = document.createElement("input");
+    input.type = "text";
+    input.className = "artist-input";
+    input.placeholder = "Например: Кипелов";
+    input.value = value;
+
+    const inputId = `artist-input-${artistFieldCounter++}`;
+    input.id = inputId;
+
+    const suggestions = document.createElement("div");
+    suggestions.className = "artist-suggestions suggestions";
+    suggestions.id = `suggestions-${inputId}`;
+
+    const removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.className = "remove-artist";
+    removeBtn.textContent = "✕";
+    removeBtn.addEventListener("click", () => {
+      wrapper.remove();
+      updateArtistHiddenInput();
+    });
+
+    wrapper.appendChild(input);
+    wrapper.appendChild(suggestions);
+    wrapper.appendChild(removeBtn);
+
+    container.appendChild(wrapper);
+
+    setupAutocomplete(inputId, "/api/artists/search/", suggestions.id);
+  }
+
+  function updateArtistHiddenInput() {
+    const inputs = document.querySelectorAll(".artist-input");
+    const names = Array.from(inputs)
+      .map(input => input.value.trim())
+      .filter(name => name);
+    document.getElementById("artist-names-hidden").value = names.join("|");
+  }
+
+  document.getElementById("add-artist").addEventListener("click", () => {
+    createArtistField();
+  });
+
+  function setupAutocomplete(inputId, apiUrl, suggestionsId) {
+    const input = document.getElementById(inputId);
+    const suggestions = document.getElementById(suggestionsId);
+    if (!input || !suggestions) return;
+
+    input.removeEventListener("input", handleInput);
+    suggestions.removeEventListener("click", handleClickOutside);
+
+    function handleInput() {
+      const query = input.value.trim();
+      if (query.length < 1) {
+        suggestions.style.display = "none";
+        return;
+      }
+      fetch(`${apiUrl}?q=${encodeURIComponent(query)}`)
+        .then((r) => r.json())
+        .then((data) => {
+          suggestions.innerHTML = "";
+          data.forEach((item) => {
+            const div = document.createElement("div");
+            div.textContent = item.name || item.title;
+            div.addEventListener("click", () => {
+              input.value = item.name || item.title;
+              suggestions.style.display = "none";
+              updateArtistHiddenInput();
             });
-        }
-
-        function handleClickOutside(e) {
-          if (!input.contains(e.target) && !suggestions.contains(e.target)) {
-            suggestions.style.display = "none";
-          }
-        }
-
-        input.addEventListener("input", handleInput);
-        document.addEventListener("click", handleClickOutside);
-
-        // Для удобства — очистка при клике на поле
-        input.addEventListener("focus", () => {
-          suggestions.style.display = "none";
-        });
-      }
-
-      // === ИНИЦИАЛИЗАЦИЯ ===
-      document.addEventListener("DOMContentLoaded", () => {
-        setupAutocomplete("album-input", "/api/albums/search/", "album-suggestions");
-
-        // Инициализация жанров
-        const hiddenContainer = document.getElementById('genres-hidden-container');
-        if (hiddenContainer) {
-          const inputs = hiddenContainer.querySelectorAll('input[name="genres"]');
-          inputs.forEach((input) => {
-            if (input.value && !selectedGenresArray.includes(input.value)) {
-              selectedGenresArray.push(input.value);
-            }
+            suggestions.appendChild(div);
           });
-          renderGenres();
-        }
-
-        // Обновление скрытого поля при изменении любого artist-input
-        document.addEventListener("input", (e) => {
-          if (e.target.classList.contains("artist-input")) {
-            updateArtistHiddenInput();
-          }
+          suggestions.style.display = "block";
         });
+    }
+
+    function handleClickOutside(e) {
+      if (!input.contains(e.target) && !suggestions.contains(e.target)) {
+        suggestions.style.display = "none";
+      }
+    }
+
+    input.addEventListener("input", handleInput);
+    document.addEventListener("click", handleClickOutside);
+
+    input.addEventListener("focus", () => {
+      suggestions.style.display = "none";
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    setupAutocomplete("album-input", "/api/albums/search/", "album-suggestions");
+
+    const hiddenContainer = document.getElementById('genres-hidden-container');
+    if (hiddenContainer) {
+      const inputs = hiddenContainer.querySelectorAll('input[name="genres"]');
+      inputs.forEach((input) => {
+        if (input.value && !selectedGenresArray.includes(input.value)) {
+          selectedGenresArray.push(input.value);
+        }
       });
-    </script>
-  </body>
-</html>
+      renderGenres();
+    }
+
+    document.addEventListener("input", (e) => {
+      if (e.target.classList.contains("artist-input")) {
+        updateArtistHiddenInput();
+      }
+    });
+  });
+</script>
+{% endblock %}

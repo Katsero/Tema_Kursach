@@ -1,120 +1,44 @@
-<!-- music/templates/home.html -->
-<!doctype html>
-<html lang="ru">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MPirat3</title>
-<style>
-  * {
-  box-sizing: border-box;
-  }
-  body {
-    font-family: Arial, sans-serif;
-    background: #f9f9f9;
-    color: #333;
-    margin: 0;
-    padding: 20px;
-    max-width: 1440px;
-    margin: 0 auto;
-  }
+{% extends "base.html" %}
 
-  header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-  }
+{% block title %}Анонимная музыкальная библиотека MPirat3{% endblock %}
 
-  .search-container {
+{% block content %}
+<header>
+  <h1>Анонимная музыкальная библиотека MPirat3</h1>
+  <div class="nav-links" style="
     display: flex;
     gap: 10px;
     flex-wrap: wrap;
     margin-bottom: 20px;
-  }
+  ">
+    {% if user.is_authenticated %}
+      <span>Привет, {{ user.email }}!</span>
+      <a href="{% url 'my_tracks' %}" style="padding: 8px 12px; text-decoration: none; border-radius: 4px; color: white; background: #007bff; border: none;">Мои треки</a>
+      <a href="{% url 'upload' %}" style="padding: 8px 12px; text-decoration: none; border-radius: 4px; color: white; background: #28a745; border: none;">Загрузить трек</a>
+      <a href="{% url 'logout' %}" style="padding: 8px 12px; text-decoration: none; border-radius: 4px; color: white; background: #6c757d; border: none;">Выйти</a>
+    {% else %}
+      <a href="{% url 'login' %}" style="padding: 8px 12px; text-decoration: none; border-radius: 4px; color: white; background: #007bff; border: none;">Войти</a>
+      <a href="{% url 'register' %}" style="padding: 8px 12px; text-decoration: none; border-radius: 4px; color: white; background: #28a745; border: none;">Регистрация</a>
+    {% endif %}
+  </div>
+</header>
 
-  .search-container input,
-  .search-container select,
-  .search-container button {
-    padding: 8px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-  }
-
-.track-list {
-  display: grid;
-  gap: 15px;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-}
-
-.track-card {
-  background: white;
-  padding: 15px;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  width: 100%;
-}
-
-  .track-meta {
-    margin: 10px 0;
-    font-size: 0.9em;
-    color: #555;
-  }
-
-  .track-actions {
-    margin-top: 10px;
-  }
-
-  .track-actions a {
-    margin-right: 15px;
-    text-decoration: none;
-    color: #007bff;
-  }
-
-  .pagination {
-    margin-top: 20px;
-    text-align: center;
-  }
-
-  .pagination a,
-  .pagination span {
-    display: inline-block;
-    padding: 5px 10px;
-    margin: 0 5px;
-    border: 1px solid #ddd;
-    text-decoration: none;
-    color: #007bff;
-    padding: 8px 12px;
-    border-radius: 4px;
-  }
-
-  .pagination .current {
-    background: #007bff;
-    color: white;
-    border-color: #007bff;
-  }
-</style>
-  </head>
-  <body>
-      <header>
-        <h1>Анонимная музыкальная библиотека MPirat3</h1>
-        <a
-        href="{% url 'upload' %}"
-        style="padding: 8px 16px; background: #28a745; color: white; text-decoration: none; border-radius: 4px;"
-        >
-        Загрузить трек
-      </a>
-    </header>
-    
-<div class="search-container">
-  <form method="get" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: end;">
+<div class="search-container" style="
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+  align-items: end;
+">
+  <form method="get" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: end; width: 100%;">
     <input
       type="text"
       name="search"
       value="{{ search_query }}"
       placeholder="Поиск по названию, жанру, исполнителю..."
+      style="flex: 1; min-width: 200px; padding: 8px; border: 1px solid #ccc; border-radius: 4px;"
     />
-    <select name="genre">
+    <select name="genre" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
       <option value="">Любой жанр</option>
       {% for genre in all_genres %}
         <option value="{{ genre.code }}" {% if genre.code == genre_filter %}selected{% endif %}>
@@ -122,7 +46,7 @@
         </option>
       {% endfor %}
     </select>
-    <select name="artist">
+    <select name="artist" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
       <option value="">Любой исполнитель</option>
       {% for artist in all_artists %}
         <option value="{{ artist.name }}" {% if artist.name == artist_filter %}selected{% endif %}>
@@ -130,80 +54,87 @@
         </option>
       {% endfor %}
     </select>
-    <select name="page_size">
+    <select name="page_size" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
       <option value="6" {% if page_size == 6 %}selected{% endif %}>6 треков</option>
       <option value="12" {% if page_size == 12 %}selected{% endif %}>12 треков</option>
       <option value="24" {% if page_size == 24 %}selected{% endif %}>24 трека</option>
     </select>
-    <button type="submit">Найти</button>
+    <button type="submit" style="padding: 8px 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Найти</button>
   </form>
 </div>
-    
-    {% if page_obj %}
-    <div class="track-list">
-      {% for track in page_obj %}
-      <div class="track-card">
+
+{% if page_obj %}
+  <div class="track-list" style="
+    display: grid;
+    gap: 15px;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  ">
+    {% for track in page_obj %}
+      <div class="track-card" style="
+        background: white;
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        width: 100%;
+      ">
         <h3>{{ track.title }}</h3>
-        <div class="track-meta">
-          <p><strong>Загрузил:</strong> {{ track.uploaded_by }}</p>
+        <div class="track-meta" style="margin: 10px 0; font-size: 0.9em; color: #555;">
+          <p><strong>Загрузил:</strong> {{ track.uploaded_by.email }}</p>
           <p>
             <strong>Альбом:</strong>
             {% if track.album %}
-            {{ track.album.title }}
+              {{ track.album.title }}
             {% else %}
-            Не указан
+              Не указан
             {% endif %}
           </p>
           <p>
             <strong>Жанры:</strong>
             {% for genre in track.genres.all %}
-            {{ genre.name }}
-            {% if not forloop.last %}, {% endif %}
+              {{ genre.name }}
+              {% if not forloop.last %}, {% endif %}
             {% empty %}
-            Не указаны
+              Не указаны
             {% endfor %}
           </p>
           <p>
             <strong>Исполнители:</strong>
             {% for artist in track.artists.all %}
-            {{ artist.name }}
-            {% if not forloop.last %}, {% endif %}
+              {{ artist.name }}
+              {% if not forloop.last %}, {% endif %}
             {% empty %}
-            Не указаны
+              Не указаны
             {% endfor %}
           </p>
         </div>
-        <div class="track-actions">
+        <div class="track-actions" style="margin-top: 10px;">
           <audio controls style="width: 100%">
             <source src="{{ track.audio_file.url }}" type="audio/mpeg" />
             Ваш браузер не поддерживает аудио.
           </audio>
         </div>
       </div>
-      {% empty %}
+    {% empty %}
       <p>Нет треков по вашему запросу.</p>
-      {% endfor %}
-    </div>
-    
-    <!-- Пагинация -->
-<!-- Пагинация -->
-<div class="pagination">
-  {% if page_obj.has_previous %}
-    <a href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if genre_filter %}&genre={{ genre_filter }}{% endif %}{% if artist_filter %}&artist={{ artist_filter }}{% endif %}&page_size={{ page_size }}">« Первая</a>
-    <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if genre_filter %}&genre={{ genre_filter }}{% endif %}{% if artist_filter %}&artist={{ artist_filter }}{% endif %}&page_size={{ page_size }}">‹ Предыдущая</a>
-  {% endif %}
+    {% endfor %}
+  </div>
 
-  <span class="current">
-    Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}
-  </span>
-
-  {% if page_obj.has_next %}
-    <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if genre_filter %}&genre={{ genre_filter }}{% endif %}{% if artist_filter %}&artist={{ artist_filter }}{% endif %}&page_size={{ page_size }}">Следующая ›</a>
-    <a href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if genre_filter %}&genre={{ genre_filter }}{% endif %}{% if artist_filter %}&artist={{ artist_filter }}{% endif %}&page_size={{ page_size }}">Последняя »</a>
-  {% endif %}
-</div>
-    {% else %}
-    <p>Ошибка загрузки треков.</p>
+  <div class="pagination" style="margin-top: 20px; text-align: center;">
+    {% if page_obj.has_previous %}
+      <a href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if genre_filter %}&genre={{ genre_filter }}{% endif %}{% if artist_filter %}&artist={{ artist_filter }}{% endif %}&page_size={{ page_size }}" style="display: inline-block; padding: 8px 12px; margin: 0 5px; border: 1px solid #ddd; text-decoration: none; color: #007bff; border-radius: 4px;">« Первая</a>
+      <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if genre_filter %}&genre={{ genre_filter }}{% endif %}{% if artist_filter %}&artist={{ artist_filter }}{% endif %}&page_size={{ page_size }}" style="display: inline-block; padding: 8px 12px; margin: 0 5px; border: 1px solid #ddd; text-decoration: none; color: #007bff; border-radius: 4px;">‹ Предыдущая</a>
     {% endif %}
-  </body>
-</html>
+
+    <span class="current" style="display: inline-block; padding: 8px 12px; margin: 0 5px; border: 1px solid #007bff; background: #007bff; color: white; border-radius: 4px;">
+      Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}
+    </span>
+
+    {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if genre_filter %}&genre={{ genre_filter }}{% endif %}{% if artist_filter %}&artist={{ artist_filter }}{% endif %}&page_size={{ page_size }}" style="display: inline-block; padding: 8px 12px; margin: 0 5px; border: 1px solid #ddd; text-decoration: none; color: #007bff; border-radius: 4px;">Следующая ›</a>
+      <a href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if genre_filter %}&genre={{ genre_filter }}{% endif %}{% if artist_filter %}&artist={{ artist_filter }}{% endif %}&page_size={{ page_size }}" style="display: inline-block; padding: 8px 12px; margin: 0 5px; border: 1px solid #ddd; text-decoration: none; color: #007bff; border-radius: 4px;">Последняя »</a>
+    {% endif %}
+  </div>
+{% else %}
+  <p>Ошибка загрузки треков.</p>
+{% endif %}
+{% endblock %}

@@ -17,9 +17,18 @@ python manage.py runserver
 ## БАЗА ДАННЫХ
 ## http://localhost:8000/admin
 
-superuser
-starley
+## Ещё пользователи:
+
+python manage.py createsuperuser
 test@gmail.com
+starley
+mysecretpassword
+mysecretpassword
+
+moder@moder.moder
+mysecretpassword
+
+starley@starley.starley
 mysecretpassword
 
 ## ТЕСТЫ

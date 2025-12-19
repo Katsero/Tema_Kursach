@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Мои треки{% endblock %}
+{% block content %}
+<style>
+  .status-approved { color: #28a745; }
+  .status-pending { color: #dc3545; }
+</style>
+
+<div class="header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+  <h1>Мои треки</h1>
+  <div class="nav" style="display: flex; gap: 10px;">
+    <a href="{% url 'home' %}" style="padding: 8px 16px; text-decoration: none; border-radius: 4px; color: white; background: #007bff;">Главная</a>
+    <a href="{% url 'upload' %}" style="padding: 8px 16px; text-decoration: none; border-radius: 4px; color: white; background: #28a745;">Загрузить трек</a>
+  </div>
+</div>
+
+{% if page_obj %}
+  {% for track in page_obj %}
+    <div class="track-card" style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+      <h3>{{ track.title }}</h3>
+      <div class="track-meta" style="color: #555; margin: 10px 0;">
+        <p><strong>Статус:</strong> 
+          <span class="status {% if track.status == 'approved' %}status-approved{% else %}status-pending{% endif %}" style="font-weight: bold;">
+            {% if track.status == 'approved' %}Одобрен{% else %}К одобрению{% endif %}
+          </span>
+        </p>
+        <p><strong>Жанры:</strong>
+          {% for g in track.genres.all %}{{ g.name }}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}
+        </p>
+        <p><strong>Исполнители:</strong>
+          {% for a in track.artists.all %}{{ a.name }}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}
+        </p>
+      </div>
+      <div class="actions" style="margin-top: 10px;">
+        {% if track.status != 'approved' %}
+          <span>Ожидает модерации</span>
+        {% else %}
+          <audio controls style="width: 100%"><source src="{{ track.audio_file.url }}" type="audio/mpeg"></audio>
+        {% endif %}
+        <a href="{% url 'delete_track' track.id %}" onclick="return confirm('Удалить трек?')" style="margin-right: 15px; color: #007bff; text-decoration: none;">Удалить</a>
+      </div>
+    </div>
+  {% empty %}
+    <p>У вас пока нет загруженных треков.</p>
+  {% endfor %}
+
+  <div class="pagination" style="text-align: center; margin-top: 20px;">
+    {% if page_obj.has_previous %}
+      <a href="?page=1" style="display: inline-block; padding: 8px 12px; margin: 0 5px; border: 1px solid #ddd; text-decoration: none; color: #007bff; border-radius: 4px;">« Первая</a>
+      <a href="?page={{ page_obj.previous_page_number }}" style="display: inline-block; padding: 8px 12px; margin: 0 5px; border: 1px solid #ddd; text-decoration: none; color: #007bff; border-radius: 4px;">‹ Предыдущая</a>
+    {% endif %}
+    <span class="current" style="display: inline-block; padding: 8px 12px; margin: 0 5px; border: 1px solid #007bff; background: #007bff; color: white; border-radius: 4px;">Стр. {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}" style="display: inline-block; padding: 8px 12px; margin: 0 5px; border: 1px solid #ddd; text-decoration: none; color: #007bff; border-radius: 4px;">Следующая ›</a>
+      <a href="?page={{ page_obj.paginator.num_pages }}" style="display: inline-block; padding: 8px 12px; margin: 0 5px; border: 1px solid #ddd; text-decoration: none; color: #007bff; border-radius: 4px;">Последняя »</a>
+    {% endif %}
+  </div>
+{% endif %}
+{% endblock %}

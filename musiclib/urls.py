@@ -1,4 +1,3 @@
-# musiclib/urls.py
 from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
@@ -6,7 +5,7 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('music.urls')),  # ← всё из music/urls.py
+    path('', include('music.urls')), 
 ]
 
 if settings.DEBUG:

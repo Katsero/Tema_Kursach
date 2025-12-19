@@ -1,5 +1,19 @@
-# music/models.py
 from django.db import models
+from django.contrib.auth.models import AbstractUser
+
+class CustomUser(AbstractUser):
+    email = models.EmailField(unique=True)
+    is_moderator = models.BooleanField(default=False, verbose_name="Модератор")
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['username']
+
+    def __str__(self):
+        return self.email
+
+    class Meta:
+        verbose_name = "Пользователь"
+        verbose_name_plural = "Пользователи"
+
 
 class Genre(models.Model):
     name = models.CharField(max_length=50, unique=True, verbose_name="Название жанра")
@@ -38,13 +52,21 @@ class Album(models.Model):
 
 
 class Track(models.Model):
+    STATUS_PENDING = 'pending'
+    STATUS_APPROVED = 'approved'
+    STATUS_CHOICES = [
+        (STATUS_PENDING, 'К одобрению'),
+        (STATUS_APPROVED, 'Одобрен'),
+    ]
+
     title = models.CharField(max_length=200, verbose_name="Название трека", default="Unnamed")
     audio_file = models.FileField(upload_to='tracks/', verbose_name="Аудиофайл")
-    uploaded_by = models.CharField(max_length=100, verbose_name="Ник загрузившего", default="Аноним")
+    uploaded_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="uploaded_tracks")
     uploaded_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата загрузки")
     album = models.ForeignKey(Album, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Альбом")
     artists = models.ManyToManyField(Artist, related_name="tracks", verbose_name="Исполнители")
     genres = models.ManyToManyField(Genre, related_name="tracks", blank=True, verbose_name="Жанры")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING, verbose_name="Статус")
 
     def __str__(self):
         return self.title
@@ -56,6 +78,7 @@ class Track(models.Model):
 
 class Comment(models.Model):
     track = models.ForeignKey(Track, on_delete=models.CASCADE, related_name="comments", verbose_name="Трек")
+    author = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="comments", null=True, blank=True)
     author_name = models.CharField(max_length=100, verbose_name="Имя автора комментария", default="Аноним")
     text = models.TextField(verbose_name="Текст комментария")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата публикации")

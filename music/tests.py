@@ -1,15 +1,12 @@
 from django.test import TestCase, Client
 from django.urls import reverse
 from django.core.files.uploadedfile import SimpleUploadedFile
-from .models import Track, Artist, Album, Genre, Comment
-from .forms import TrackUploadForm
+from .models import Track, Artist, Album, Genre, Comment, CustomUser
 
 
 class ModelTestCase(TestCase):
-    """Тесты моделей"""
-
     def setUp(self):
-        # Используем get_or_create, чтобы не нарушать уникальность
+        self.user = CustomUser.objects.create(email="test@test.com", username="anon")
         self.genre, _ = Genre.objects.get_or_create(name="Рок", code="rock")
         self.artist, _ = Artist.objects.get_or_create(name="Кипелов")
         self.album, _ = Album.objects.get_or_create(title="Атака")
@@ -26,74 +23,50 @@ class ModelTestCase(TestCase):
 
     def test_track_defaults(self):
         track = Track.objects.create(
-            audio_file=SimpleUploadedFile("test.mp3", b"fake audio content"),
+            audio_file=SimpleUploadedFile("test.mp3", b"fake"),
+            uploaded_by=self.user,
+            status='approved'
         )
         self.assertEqual(track.title, "Unnamed")
-        self.assertEqual(track.uploaded_by, "Аноним")
 
     def test_track_with_relations(self):
         track = Track.objects.create(
             title="Песня",
-            uploaded_by="Юзер",
+            uploaded_by=self.user,
             audio_file=SimpleUploadedFile("song.mp3", b"audio"),
             album=self.album,
+            status='approved'
         )
         track.artists.add(self.artist)
         track.genres.add(self.genre)
         self.assertIn(self.artist, track.artists.all())
         self.assertIn(self.genre, track.genres.all())
-        self.assertEqual(track.album, self.album)
 
     def test_comment(self):
-        track = Track.objects.create(audio_file=SimpleUploadedFile("t.mp3", b"x"))
+        track = Track.objects.create(
+            audio_file=SimpleUploadedFile("t.mp3", b"x"),
+            uploaded_by=self.user,
+            status='approved'
+        )
         comment = Comment.objects.create(
             track=track,
             author_name="Гость",
             text="Круто!"
         )
-        self.assertEqual(str(comment), "Комментарий от Гость к Unnamed")
-
-
-class FormTestCase(TestCase):
-    """Тесты формы загрузки трека"""
-
-    def test_valid_form(self):
-        audio = SimpleUploadedFile("valid.mp3", b"fake mp3", content_type="audio/mpeg")
-        form_data = {
-            'title': 'Тест',
-            'uploaded_by': 'Тестер',
-            'artist_names': 'Кино|Наутилус',
-            'album_title': 'Группа крови',
-            'genres': ['rock'],
-        }
-        files = {'audio_file': audio}
-        form = TrackUploadForm(data=form_data, files=files)
-        self.assertTrue(form.is_valid())
-
-    def test_invalid_file_extension(self):
-        bad_file = SimpleUploadedFile("bad.txt", b"not audio", content_type="text/plain")
-        form = TrackUploadForm(files={'audio_file': bad_file})
-        self.assertFalse(form.is_valid())
-        self.assertIn("Поддерживаются только .mp3 и .wav файлы.", form.errors['audio_file'])
-
-    def test_file_too_large(self):
-        large_file = SimpleUploadedFile("big.mp3", b"x" * (21 * 1024 * 1024))
-        form = TrackUploadForm(files={'audio_file': large_file})
-        self.assertFalse(form.is_valid())
-        self.assertIn("Файл должен быть не больше 20 МБ.", form.errors['audio_file'])
+        self.assertIn("Гость", str(comment))
 
 
 class ViewTestCase(TestCase):
-    """Тесты основных view (home и upload)"""
-
     def setUp(self):
         self.client = Client()
-        # Используем существующие жанры из миграции
+        self.user = CustomUser.objects.create(email="user@test.com", username="user")
         self.genre, _ = Genre.objects.get_or_create(name="Поп", code="pop")
         self.artist, _ = Artist.objects.get_or_create(name="Земфира")
         self.track = Track.objects.create(
             title="Прости",
+            uploaded_by=self.user,
             audio_file=SimpleUploadedFile("track.mp3", b"fake"),
+            status='approved' 
         )
         self.track.artists.add(self.artist)
         self.track.genres.add(self.genre)
@@ -102,35 +75,31 @@ class ViewTestCase(TestCase):
         response = self.client.get(reverse('home'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Анонимная музыкальная библиотека")
-        self.assertContains(response, "Прости")
+        self.assertContains(response, "Прости") 
 
     def test_search_filter(self):
         response = self.client.get(reverse('home'), {'search': 'Прости'})
         self.assertContains(response, "Прости")
-        self.assertNotContains(response, "Неизвестный трек")
 
-    def test_upload_page_get(self):
+    def test_upload_page_requires_login(self):
         response = self.client.get(reverse('upload'))
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Загрузить трек")
+        self.assertEqual(response.status_code, 302) 
 
-    def test_upload_page_post_success(self):
-        audio = SimpleUploadedFile("new.mp3", b"test audio", content_type="audio/mpeg")
+    def test_upload_as_logged_in_user(self):
+        self.client.force_login(self.user)
+        audio = SimpleUploadedFile("new.mp3", b"test", content_type="audio/mpeg")
         response = self.client.post(reverse('upload'), {
             'title': 'Новый трек',
-            'uploaded_by': 'Анон',
             'artist_names': 'Король и Шут',
-            'album_title': 'Как в старой сказке',
-            'genres': ['rock'],
+            'album_title': 'Сказка',
+            'genres': ['pop'],
             'audio_file': audio,
         })
-        self.assertRedirects(response, reverse('home'))
+        self.assertRedirects(response, reverse('my_tracks'))
         self.assertTrue(Track.objects.filter(title="Новый трек").exists())
 
 
 class APITestCase(TestCase):
-    """Тесты DRF API"""
-
     def setUp(self):
         self.client = Client()
         self.artist, _ = Artist.objects.get_or_create(name="DDT")

@@ -1,6 +1,29 @@
-# music/admin.py
 from django.contrib import admin
-from .models import Artist, Album, Track, Comment, Genre
+from django.contrib.auth.admin import UserAdmin
+from .models import CustomUser, Artist, Album, Track, Comment, Genre
+
+@admin.register(CustomUser)
+class CustomUserAdmin(UserAdmin):
+    list_display = ('email', 'username', 'is_moderator', 'is_active', 'date_joined')
+    list_filter = ('is_moderator', 'is_active', 'is_staff', 'date_joined')
+    search_fields = ('email', 'username', 'first_name', 'last_name')
+    ordering = ('-date_joined',)
+
+    fieldsets = (
+        (None, {'fields': ('email', 'password')}),
+        ('Персональная информация', {'fields': ('first_name', 'last_name', 'username')}),
+        ('Разрешения', {
+            'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions', 'is_moderator'),
+        }),
+        ('Важные даты', {'fields': ('last_login', 'date_joined')}),
+    )
+
+    add_fieldsets = (
+        (None, {
+            'classes': ('wide',),
+            'fields': ('email', 'username', 'password1', 'password2', 'is_moderator', 'is_active', 'is_staff', 'is_superuser'),
+        }),
+    )
 
 @admin.register(Genre)
 class GenreAdmin(admin.ModelAdmin):

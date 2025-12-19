@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}MPirat3{% endblock %}</title>
+  <style>
+    * { box-sizing: border-box; }
+    :root { --dark-theme: 0; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #f9f9f9;
+      color: #333;
+      margin: 0;
+      padding: 20px;
+      max-width: 1440px;
+      margin: 0 auto;
+    }
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: #ffffff00;
+      z-index: 100000;
+      backdrop-filter: invert(var(--dark-theme)) hue-rotate(calc(var(--dark-theme) * 180deg));
+      pointer-events: none;
+    }
+    .theme-toggle-btn {
+      background: #333;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      cursor: pointer;
+      font-size: 18px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+  </style>
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+  <div style="position: fixed; bottom: 20px; right: 20px; z-index: 100001;">
+    <button class="theme-toggle-btn" onclick="toggleTheme()">🌓</button>
+  </div>
+
+  {% if messages %}
+    <div style="background:#97ec9b; padding:10px; border-radius:4px; color:#085e0c; margin-bottom:20px;">
+      {% for msg in messages %}
+        <div>{{ msg }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% block content %}{% endblock %}
+
+  <script>
+    const savedTheme = localStorage.getItem('darkTheme') === 'true';
+    document.documentElement.style.setProperty('--dark-theme', savedTheme ? '1' : '0');
+
+    function toggleTheme() {
+      const current = document.documentElement.style.getPropertyValue('--dark-theme').trim();
+      const newValue = current === '1' ? '0' : '1';
+      document.documentElement.style.setProperty('--dark-theme', newValue);
+      localStorage.setItem('darkTheme', newValue === '1');
+    }
+  </script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>
